@@ -1671,23 +1671,32 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
     }
 
     if (flags & Style_On) {
-      // Draw Unicode checkmark ✓
-      p->setPen(checkmarkColor);
-      TQFont f = p->font();
-      f.setPointSize(r.height() - 2);
-      f.setBold(true);
-      p->setFont(f);
-      p->drawText(r, TQt::AlignCenter, TQString::fromUtf8("✓"));
+      // Draw Vector Checkmark using Lines (No Font usage to avoid bugs)
+      // Shape: ✓ (approximate)
+
+      TQPointArray ptr(3);
+      int cx = r.center().x();
+      int cy = r.center().y();
+
+      // Fine-tuned coordinates for 13x13 box
+      ptr.setPoint(0, cx - 3, cy);     // Left point
+      ptr.setPoint(1, cx - 1, cy + 3); // Bottom point
+      ptr.setPoint(2, cx + 4, cy - 4); // Right top point
+
+      p->save();
+      TQPen newPen = p->pen();
+      newPen.setWidth(2);
+      newPen.setColor(checkmarkColor);
+      p->setPen(newPen);
+      p->drawPolyline(ptr);
+      p->restore();
+
     } else if (flags & Style_Off) {
       // empty - nothing to draw
     } else {
-      // tristate - draw a minus sign
-      p->setPen(checkmarkColor);
-      TQFont f = p->font();
-      f.setPointSize(r.height() - 2);
-      f.setBold(true);
-      p->setFont(f);
-      p->drawText(r, TQt::AlignCenter, TQString::fromUtf8("−"));
+      // tristate - draw a minus sign / filled rect
+      p->fillRect(r.x() + 4, r.y() + r.height() / 2 - 1, r.width() - 8, 2,
+                  checkmarkColor);
     }
 
     break;

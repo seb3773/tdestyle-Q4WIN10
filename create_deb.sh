@@ -36,8 +36,11 @@ mkdir -p $PKG_DIR/opt/trinity/lib/trinity/plugins/styles
 mkdir -p $PKG_DIR/opt/trinity/share/apps/tdestyle/themes
 
 # Copy files
+# Copy files
 echo "Copying files..."
 cp "$BUILD_DIR/tde_style_q4win10.so" "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/"
+echo "Applying sstrip..."
+sstrip "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/tde_style_q4win10.so"
 cp "$BUILD_DIR/tde_style_q4win10.la" "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/"
 cp "q4win10.themerc" "$PKG_DIR/opt/trinity/share/apps/tdestyle/themes/"
 

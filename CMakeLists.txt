@@ -1,8 +1,7 @@
 
 
-add_definitions( -DQT_PLUGIN -DNDEBUG )
-set( CMAKE_BUILD_TYPE Release )
-set( CMAKE_CXX_FLAGS_RELEASE "-O2 -s -fvisibility=hidden -fvisibility-inlines-hidden" )
+add_definitions( -DQT_PLUGIN -D_DEFAULT_SOURCE -DNDEBUG -O2 -g -W -Wall -Wchar-subscripts -Wshadow -Wpointer-arith -Wmissing-prototypes -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections -fomit-frame-pointer -ffast-math -fmerge-all-constants -flto )
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--as-needed -flto -O2")
 
 
 include_directories(
