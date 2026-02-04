@@ -42,5 +42,3 @@ This style is a plugin for TDE and relies on **TDEBase** headers and build syste
     sudo make install
     ```
 
-## Author
-**seb3773** (https://github.com/seb3773)
