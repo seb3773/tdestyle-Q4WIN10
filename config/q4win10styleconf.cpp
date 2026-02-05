@@ -4,6 +4,7 @@
 */
 
 #include "q4win10styleconf.h"
+#include <kdemacros.h>
 
 #include <tdeglobal.h>
 #include <tdelocale.h>
@@ -13,7 +14,7 @@
 #include <tqslider.h>
 
 extern "C" {
-TDE_EXPORT TQWidget *allocate_tdestyle_config(TQWidget *parent) {
+KDE_EXPORT TQWidget *allocate_tdestyle_config(TQWidget *parent) {
   TDEGlobal::locale()->insertCatalogue("q4win10style");
   return new Q4Win10StyleConfig(parent);
 }
@@ -55,10 +56,10 @@ Q4Win10StyleConfig::Q4Win10StyleConfig(TQWidget *parent) : TQWidget(parent) {
   popupDelayLabel->setText(TQString::number(origPopupDelay) + " ms");
 
   // Connections
-  connect(popupDelaySlider, TQ_SIGNAL(valueChanged(int)), this,
-          TQ_SLOT(sliderValueChanged(int)));
-  connect(popupDelaySlider, TQ_SIGNAL(valueChanged(int)), this,
-          TQ_SLOT(updateChanged()));
+  connect(popupDelaySlider, TQT_SIGNAL(valueChanged(int)), this,
+          TQT_SLOT(sliderValueChanged(int)));
+  connect(popupDelaySlider, TQT_SIGNAL(valueChanged(int)), this,
+          TQT_SLOT(updateChanged()));
 }
 
 Q4Win10StyleConfig::~Q4Win10StyleConfig() {}

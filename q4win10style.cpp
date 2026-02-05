@@ -122,7 +122,7 @@ public:
   }
 };
 
-TDE_EXPORT_PLUGIN(Q4Win10StylePlugin)
+TQ_EXPORT_PLUGIN(Q4Win10StylePlugin)
 // -- end --
 
 Q4Win10Style::Q4Win10Style()
@@ -181,8 +181,8 @@ void Q4Win10Style::polish(const TQStyleControlElementData &ceData,
 
     if (!strcmp(widget->name(), "__tdehtml")) { // is it a tdehtml widget...?
       tdehtmlWidgets[widget] = true;
-      connect(widget, TQ_SIGNAL(destroyed(TQObject *)), this,
-              TQ_SLOT(tdehtmlWidgetDestroyed(TQObject *)));
+      connect(widget, TQT_SIGNAL(destroyed(TQObject *)), this,
+              TQT_SLOT(tdehtmlWidgetDestroyed(TQObject *)));
     }
 
     // use tqt_cast where possible to check if the widget inheits one of the

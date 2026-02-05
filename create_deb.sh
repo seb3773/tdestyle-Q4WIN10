@@ -2,74 +2,85 @@
 
 # Configuration
 PACKAGE_NAME="tdestyle-q4win10"
-VERSION="2.0"
-MAINTAINER="seb3773 <https://github.com/seb3773>"
-DESCRIPTION="Q4WIN10 : a Windows10 like style for Trinity desktop"
+PACKAGE_VERSION="2.0"
+DEB_VERSION="2.0"
 ARCH=$(dpkg --print-architecture)
+MAINTAINER="seb3773 <seb3773@github.com>"
+DESCRIPTION="Q4WIN10 Widget Style for Trinity Desktop"
+BUILD_DIR="package_build"
 
-# Directories
-SOURCE_DIR=$(pwd)
-BUILD_DIR="../../build/kstyles/q4win10"
-PKG_DIR="package_build"
+# Detect Trinity version from parent directory or system
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Try to extract version from path if possible, else default
+TDE_VERSION=$(echo "$SCRIPT_DIR" | grep -oP 'trinity-\K[0-9]+\.[0-9]+\.[0-9]+' || echo "14.1.1")
 
-# Colors
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
+# Package name format
+DEB_NAME="${PACKAGE_NAME}_${PACKAGE_VERSION}_tde${TDE_VERSION}_${ARCH}.deb"
 
-echo -e "${GREEN}Creating .deb package for $PACKAGE_NAME...${NC}"
+echo "Creating .deb package for $PACKAGE_NAME..."
+echo "  Trinity version: $TDE_VERSION"
+echo "  Architecture: $ARCH"
 
-# Check if build files exist
-if [ ! -f "$BUILD_DIR/tde_style_q4win10.so" ]; then
-    echo -e "${RED}Error: Compiled file tde_style_q4win10.so not found in $BUILD_DIR${NC}"
-    echo "Please compile the project first."
+# Cleanup and setup
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR/opt/trinity/lib/trinity/plugins/styles"
+mkdir -p "$BUILD_DIR/opt/trinity/share/apps/tdestyle/themes"
+mkdir -p "$BUILD_DIR/DEBIAN"
+
+# Copy files
+echo "Copying binaries and assets..."
+
+# Main style plugin
+if [ -f "$SCRIPT_DIR/tde_style_q4win10.so" ]; then
+    cp "$SCRIPT_DIR/tde_style_q4win10.so" "$BUILD_DIR/opt/trinity/lib/trinity/plugins/styles/"
+else
+    echo "Error: tde_style_q4win10.so not found. Please run 'make' first."
     exit 1
 fi
 
-# Clean previous build
-rm -rf $PKG_DIR
-rm -f ${PACKAGE_NAME}_${VERSION}_${ARCH}.deb
+# Config plugin
+if [ -f "$SCRIPT_DIR/config/tdestyle_q4win10_config.so" ]; then
+    cp "$SCRIPT_DIR/config/tdestyle_q4win10_config.so" "$BUILD_DIR/opt/trinity/lib/trinity/"
+else
+    echo "Warning: config/tdestyle_q4win10_config.so not found. Config panel might be missing."
+fi
 
-# Create directory structure
-mkdir -p $PKG_DIR/DEBIAN
-mkdir -p $PKG_DIR/opt/trinity/lib/trinity/plugins/styles
-mkdir -p $PKG_DIR/opt/trinity/share/apps/tdestyle/themes
+# Theme file
+if [ -f "$SCRIPT_DIR/q4win10.themerc" ]; then
+    cp "$SCRIPT_DIR/q4win10.themerc" "$BUILD_DIR/opt/trinity/share/apps/tdestyle/themes/"
+fi
 
-# Copy files
-# Copy files
-echo "Copying files..."
-cp "$BUILD_DIR/tde_style_q4win10.so" "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/"
-echo "Applying sstrip..."
-sstrip "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/tde_style_q4win10.so"
-cp "$BUILD_DIR/tde_style_q4win10.la" "$PKG_DIR/opt/trinity/lib/trinity/plugins/styles/"
-cp "q4win10.themerc" "$PKG_DIR/opt/trinity/share/apps/tdestyle/themes/"
+# Apply sstrip/strip
+echo "Stripping binaries..."
+for f in $(find "$BUILD_DIR/opt/trinity/lib/trinity" -name "*.so"); do
+    if [ -f "$f" ]; then
+        if command -v sstrip >/dev/null 2>&1; then
+            sstrip "$f" 2>/dev/null || true
+        else
+            strip --strip-all "$f"
+        fi
+    fi
+done
 
 # Create control file
 echo "Creating control file..."
-cat > $PKG_DIR/DEBIAN/control << EOF
+cat <<EOF > "$BUILD_DIR/DEBIAN/control"
 Package: $PACKAGE_NAME
-Version: $VERSION
+Version: $DEB_VERSION
 Section: x11
 Priority: optional
 Architecture: $ARCH
-Depends: tdebase-trinity, libtqt3-mt
+Depends: tqt3-mt, tde-core-trinity, tdeui-trinity
 Maintainer: $MAINTAINER
 Description: $DESCRIPTION
- A flat, modern Windows 10 inspired widget style for the Trinity Desktop Environment (TDE).
- optimized for performance and aesthetics.
+ Windows 10 style for Trinity.
+ Highly optimized build.
+ Author: seb3773 (https://github.com/seb3773)
 EOF
 
 # Build package
 echo "Building package..."
-dpkg-deb --build $PKG_DIR "${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
+dpkg-deb --build "$BUILD_DIR" "$DEB_NAME"
 
-# Cleanup
-rm -rf $PKG_DIR
-
-if [ -f "${PACKAGE_NAME}_${VERSION}_${ARCH}.deb" ]; then
-    echo -e "${GREEN}Success! Package created: ${PACKAGE_NAME}_${VERSION}_${ARCH}.deb${NC}"
-    ls -lh "${PACKAGE_NAME}_${VERSION}_${ARCH}.deb"
-else
-    echo -e "${RED}Error: Package creation failed.${NC}"
-    exit 1
-fi
+echo "Success! Package created: $DEB_NAME"
+ls -lh "$DEB_NAME"
