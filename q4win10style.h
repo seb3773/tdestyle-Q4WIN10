@@ -26,6 +26,9 @@ class Q4Win10Style : public TDEStyle {
 public:
   Q4Win10Style();
   virtual ~Q4Win10Style();
+  
+  
+public slots:
 
   void applicationPolish(const TQStyleControlElementData &ceData,
                          ControlElementFlags elementFlags, void *);
@@ -283,12 +286,13 @@ private:
       //                 fgRgb: %d", fgRgb, other.fgRgb); tqDebug("bgRgb:
       //                 %d\t\tother bgRgb: %d", bgRgb, other.bgRgb);
       //                 tqDebug("surfaceFlags: %d\t\tother surfaceFlags: %d",
-      //                 surfaceFlags, other.surfaceFlags);
-      //             }
       return match;
     }
   };
   TQIntCache<CacheEntry> *pixmapCache;
+
+  private:
+    // For KPE_ListViewBranch
 
   // For KPE_ListViewBranch
   mutable TQBitmap *verticalLine;

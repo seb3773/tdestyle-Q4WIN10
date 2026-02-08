@@ -42,6 +42,7 @@
 #include <tqapplication.h>
 #include <tqcheckbox.h>
 #include <tqcleanuphandler.h>
+#include <tqcursor.h>
 #include <tqcombobox.h>
 #include <tqdrawutil.h>
 #include <tqheader.h>
@@ -88,8 +89,28 @@ static TQColor alphaBlendColors(const TQColor &bgColor, const TQColor &fgColor,
   return result;
 }
 
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
+// Helper to set X11 property for Communication with Decoration
+static void setMenuBarHeightProperty(TQWidget *menuBar, int height) {
+    if (!menuBar || !menuBar->topLevelWidget()) return;
+    WId winId = menuBar->topLevelWidget()->winId();
+    Display *dpy = tqt_xdisplay();
+    Atom atom = XInternAtom(dpy, "_Q4WIN10_MENUBAR_HEIGHT", False);
+    
+    if (height > 0) {
+        long data = height;
+        XChangeProperty(dpy, winId, atom, XA_CARDINAL, 32, PropModeReplace, 
+                        (unsigned char*)&data, 1);
+    } else {
+        XDeleteProperty(dpy, winId, atom);
+    }
+}
+
 #include "q4win10style.h"
 #include "q4win10style.moc"
+
 
 // some bitmaps for the radio button so it's easier to handle the circle
 // stuff... 13x13
@@ -201,8 +222,26 @@ void Q4Win10Style::polish(const TQStyleControlElementData &ceData,
     } else if (::tqt_cast<TQTabBar *>(widget)) {
       widget->setMouseTracking(true);
       installObjectEventHandler(ceData, elementFlags, ptr, this);
+    } else if (TQMenuBar *menuBar = ::tqt_cast<TQMenuBar *>(widget)) {
+      // Minimal setup: Just palette and background mode.
+      // We rely on standard QMenuBar event handling (Zen Motif approach).
+      
+      // Create a specific palette for the Menu Bar:
+      // We want the standard robust repaint behavior of PaletteButton,
+      // but visually we want it to be the Standard Base Color (usually White).
+      // We retrieve pal.active().base() which is dynamic (not hardcoded).
+      TQPalette pal = menuBar->palette();
+      TQColor baseColor = pal.active().base(); 
+      pal.setColor(TQColorGroup::Button, baseColor);
+      pal.setColor(TQColorGroup::Background, baseColor);
+      menuBar->setPalette(pal);
+
+      menuBar->setBackgroundMode(TQt::PaletteButton);
+      
+      // Communicate Menu Bar Height to Window Decoration (for seamless borders)
+      setMenuBarHeightProperty(menuBar, menuBar->height());
     } else if (::tqt_cast<TQPopupMenu *>(widget)) {
-      widget->setBackgroundMode(NoBackground);
+      widget->setBackgroundMode(TQt::PaletteBackground);
     } else if (!qstrcmp(widget->name(), "tde toolbar widget")) {
       installObjectEventHandler(ceData, elementFlags, ptr, this);
     }
@@ -235,6 +274,9 @@ void Q4Win10Style::unPolish(const TQStyleControlElementData &ceData,
     } else if (::tqt_cast<TQTabBar *>(widget)) {
       widget->setMouseTracking(false);
       removeObjectEventHandler(ceData, elementFlags, ptr, this);
+    } else if (::tqt_cast<TQMenuBar *>(widget)) {
+        TQMenuBar *menuBar = ::tqt_cast<TQMenuBar *>(widget);
+        setMenuBarHeightProperty(menuBar, 0); // Clear property
     } else if (::tqt_cast<TQPopupMenu *>(widget)) {
       widget->setBackgroundMode(PaletteBackground);
     } else if (!qstrcmp(widget->name(), "tde toolbar widget")) {
@@ -266,7 +308,10 @@ void Q4Win10Style::renderContour(TQPainter *p, const TQRect &r,
 
   TQColor contourColor;
   if (disabled) {
-    contourColor = backgroundColor.dark(150);
+    if (contour == backgroundColor)
+      contourColor = backgroundColor;
+    else
+      contourColor = backgroundColor.dark(150);
   } else {
     contourColor = contour;
   }
@@ -990,63 +1035,39 @@ void Q4Win10Style::drawTDEStylePrimitive(
   switch (kpe) {
   case KPE_SliderGroove: {
     bool horizontal = ceData.orientation == TQt::Horizontal;
+    TQColor selectionColor = cg.highlight();
+    if (!enabled)
+      selectionColor = selectionColor.light(140);
 
     if (horizontal) {
       int center = r.y() + r.height() / 2;
-      renderContour(p, TQRect(r.left(), center - 2, r.width(), 4),
-                    cg.background(), cg.background().dark(enabled ? 150 : 130),
-                    Draw_Left | Draw_Right | Draw_Top | Draw_Bottom);
+      // Windows 10 style: Thin blue path
+      p->fillRect(r.left(), center - 1, r.width(), 2, selectionColor);
     } else {
       int center = r.x() + r.width() / 2;
-      renderContour(p, TQRect(center - 2, r.top(), 4, r.height()),
-                    cg.background(), cg.background().dark(enabled ? 150 : 130),
-                    Draw_Left | Draw_Right | Draw_Top | Draw_Bottom);
+      // Windows 10 style: Thin blue path
+      p->fillRect(center - 1, r.top(), 2, r.height(), selectionColor);
     }
     break;
   }
 
   case KPE_SliderHandle: {
-    bool horizontal = ceData.orientation == TQt::Horizontal;
     const bool mouseOver = flags & Style_MouseOver;
-    const bool enabled = flags & Style_Enabled;
     const bool pressed = (flags & Style_Active) || (flags & Style_Down);
 
-    // Windows 10 style: Simple rectangle
-    // Vertical rectangle for horizontal slider, Horizontal for vertical slider
+    // Windows 10 style: Selection Color blue handle
+    TQColor handleColor = enabled ? cg.highlight() : cg.highlight().light(140);
 
-    TQColor handleColor;
-    if (!enabled) {
-      handleColor = cg.background().dark(110);
-    } else if (mouseOver || pressed) {
-      handleColor = getColor(cg, MouseOverHighlight); // Blueish on hover
-    } else {
-      handleColor = cg.background(); // Window background color as requested
+    if (mouseOver || pressed) {
+      handleColor = handleColor.light(110);
     }
 
-    // Add a border for visibility since it's same color as background
-    p->setPen(cg.background().dark(140));
-    p->setBrush(handleColor);
+    // Centered rectangle drawing
+    p->fillRect(r, handleColor);
 
-    int cx = r.center().x();
-    int cy = r.center().y();
-
-    if (horizontal) {
-      // Vertical rectangle - wider (12px)
-      int w = 12;
-      int h = 18;
-      if (h > r.height())
-        h = r.height();
-
-      p->drawRect(cx - w / 2, cy - h / 2, w, h);
-    } else {
-      // Horizontal rectangle - wider (12px)
-      int w = 18;
-      int h = 12;
-      if (w > r.width())
-        w = r.width();
-
-      p->drawRect(cx - w / 2, cy - h / 2, w, h);
-    }
+    // Subtle border
+    p->setPen(handleColor.dark(120));
+    p->drawRect(r);
 
     break;
   }
@@ -1269,17 +1290,20 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   }
 
   case PE_ScrollBarSlider: {
-    // Windows 10 style: light gray slider (slightly darkened)
-    // Windows 10 style: slider uses window background color
-    const TQColor sliderColor = cg.background();
-    const TQColor borderColor =
-        cg.background().dark(130); // darkened border for visibility
+    // Windows 10 style: slider uses button background color
+    TQColor sliderColor = cg.button();
+    if (flags & Style_MouseOver)
+      sliderColor = sliderColor.dark(110);
+    else if (flags & (Style_Active | Style_Down))
+      sliderColor = sliderColor.dark(120);
+
+    const TQColor borderColor = sliderColor;
 
     // Draw border
     p->setPen(borderColor);
     p->drawRect(r.x(), r.y(), r.width(), r.height());
 
-    // Fill with white - no gradients, no complex surfaces
+    // Fill slider
     if (r.width() > 2 && r.height() > 2) {
       p->fillRect(r.x() + 1, r.y() + 1, r.width() - 2, r.height() - 2,
                   sliderColor);
@@ -1291,7 +1315,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   case PE_ScrollBarAddPage:
   case PE_ScrollBarSubPage: {
     // Windows 10 style: darker gray track for contrast with white slider
-    TQColor trackColor = cg.background().dark(115);
+    TQColor trackColor = cg.background();
     if (on || down) {
       trackColor = trackColor.dark(105);
     }
@@ -1317,11 +1341,19 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
       contourFlags |= Round_UpperLeft | Round_UpperRight;
       surfaceFlags |= Round_UpperLeft | Round_UpperRight;
     }
-    renderContour(p, r, cg.background(), getColor(cg, ButtonContour),
-                  contourFlags);
+
+    TQColor btnBorder;
+    if (down)
+      btnBorder = cg.background().dark(114);
+    else if (flags & Style_MouseOver)
+      btnBorder = getColor(cg, MouseOverHighlight);
+    else
+      btnBorder = cg.background();
+
+    renderContour(p, r, cg.background(), btnBorder, contourFlags);
     renderSurface(
-        p, TQRect(r.left() + 1, r.top() + 1, r.width() - 2, r.height() - 2),
-        cg.background(), cg.button(), getColor(cg, MouseOverHighlight),
+        p, r,
+        cg.background(), cg.background(), getColor(cg, MouseOverHighlight),
         _contrast + 3, surfaceFlags);
 
     p->setPen(cg.foreground());
@@ -1346,11 +1378,19 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
       contourFlags |= Round_BottomLeft | Round_BottomRight;
       surfaceFlags |= Round_BottomLeft | Round_BottomRight;
     }
-    renderContour(p, r, cg.background(), getColor(cg, ButtonContour),
-                  contourFlags);
+
+    TQColor btnBorder;
+    if (down)
+      btnBorder = cg.background().dark(114);
+    else if (flags & Style_MouseOver)
+      btnBorder = getColor(cg, MouseOverHighlight);
+    else
+      btnBorder = cg.background();
+
+    renderContour(p, r, cg.background(), btnBorder, contourFlags);
     renderSurface(
-        p, TQRect(r.left() + 1, r.top() + 1, r.width() - 2, r.height() - 2),
-        cg.background(), cg.button(), getColor(cg, MouseOverHighlight),
+        p, r,
+        cg.background(), cg.background(), getColor(cg, MouseOverHighlight),
         _contrast + 3, surfaceFlags);
 
     p->setPen(cg.foreground());
@@ -1571,6 +1611,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   }
 
   case PE_PanelPopup: {
+    p->fillRect(r, cg.background().light(105));
     renderContour(p, r, cg.background(), cg.background().dark(200),
                   Draw_Left | Draw_Right | Draw_Top | Draw_Bottom);
     break;
@@ -1578,13 +1619,16 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
 
     // MENU / TOOLBAR PANEL
     // --------------------
-  case PE_PanelMenuBar:
+  case PE_PanelMenuBar: {
+    // Use explicit cg.base() (Standard Background Color) for Menu Bar.
+    // This is the semantic color for text fields, etc. - NOT hardcoded white.
+    p->fillRect(r, cg.base());
+    break;
+  }
+
   case PE_PanelDockWindow: {
-    // fix for toolbar lag (from Mosfet Liquid)
-    TQWidget *w = dynamic_cast<TQWidget *>(p->device());
-    if (w && w->backgroundMode() == PaletteButton)
-      w->setBackgroundMode(PaletteBackground);
-    p->fillRect(r, cg.brush(TQColorGroup::Background));
+    // Removed side-effect state mutation.
+    p->fillRect(r, cg.background());
 
     if (_drawToolBarSeparator) {
       if (r.width() > r.height()) {
@@ -1599,7 +1643,6 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
         p->drawLine(r.right(), r.top(), r.right(), r.bottom());
       }
     }
-
     break;
   }
 
@@ -1611,31 +1654,18 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   }
 
   case PE_DockWindowHandle: {
-
-    int counter = 1;
-
-    if (horiz) {
-      int center = r.left() + r.width() / 2;
-      for (int j = r.top() + 2; j <= r.bottom() - 3; j += 3) {
-        if (counter % 2 == 0) {
-          renderDot(p, TQPoint(center + 1, j), cg.background(), true, true);
-        } else {
-          renderDot(p, TQPoint(center - 2, j), cg.background(), true, true);
-        }
-        counter++;
-      }
-    } else {
-      int center = r.top() + r.height() / 2;
-      for (int j = r.left() + 2; j <= r.right() - 3; j += 3) {
-        if (counter % 2 == 0) {
-          renderDot(p, TQPoint(j, center + 1), cg.background(), true, true);
-        } else {
-          renderDot(p, TQPoint(j, center - 2), cg.background(), true, true);
-        }
-        counter++;
-      }
+    // Narrower Windows 10 style grip: 2px solid rectangle
+    // Using cg.button() color as requested (standard button color)
+    int handleWidth = 2;
+    TQRect grip;
+    if (horiz) { // vertical handle for horizontal toolbar
+      grip = TQRect(r.x() + (r.width() - handleWidth) / 2, r.top() + 2,
+                    handleWidth, r.height() - 4);
+    } else { // horizontal handle for vertical toolbar
+      grip = TQRect(r.left() + 2, r.y() + (r.height() - handleWidth) / 2,
+                    r.width() - 4, handleWidth);
     }
-
+    p->fillRect(grip, cg.button());
     break;
   }
 
@@ -1673,22 +1703,18 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
     if (flags & Style_On) {
       // Draw Vector Checkmark using Lines (No Font usage to avoid bugs)
       // Shape: ✓ (approximate)
-
-      TQPointArray ptr(3);
       int cx = r.center().x();
       int cy = r.center().y();
 
-      // Fine-tuned coordinates for 13x13 box
-      ptr.setPoint(0, cx - 3, cy);     // Left point
-      ptr.setPoint(1, cx - 1, cy + 3); // Bottom point
-      ptr.setPoint(2, cx + 4, cy - 4); // Right top point
-
       p->save();
-      TQPen newPen = p->pen();
-      newPen.setWidth(2);
-      newPen.setColor(checkmarkColor);
-      p->setPen(newPen);
-      p->drawPolyline(ptr);
+      p->setPen(checkmarkColor);
+      // Draw 1px lines twice for better crispness than setWidth(2)
+      // Left stroke
+      p->drawLine(cx - 3, cy, cx - 1, cy + 2);
+      p->drawLine(cx - 3, cy + 1, cx - 1, cy + 3);
+      // Right stroke
+      p->drawLine(cx - 1, cy + 2, cx + 4, cy - 3);
+      p->drawLine(cx - 1, cy + 3, cx + 4, cy - 2);
       p->restore();
 
     } else if (flags & Style_Off) {
@@ -1743,69 +1769,105 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   case PE_ArrowDown:
   case PE_ArrowLeft:
   case PE_ArrowRight: {
-    TQPointArray a;
-
+    TQPointArray a(3);
+    int cx = r.center().x();
+    int cy = r.center().y();
+    
+    // Windows 10 style Symmetrical Checkmark (V-shape)
+    // Fixed integer coordinates for perfect alignment.
+    // Standard size: 6x3 pixels. SpinWidget: 4x2 pixels.
+    
     switch (pe) {
     case PE_SpinWidgetUp:
-    case PE_ArrowUp: {
-      a.setPoints(7, u_arrow);
+      a.setPoint(0, cx - 2, cy + 1);
+      a.setPoint(1, cx,     cy - 1);
+      a.setPoint(2, cx + 2, cy + 1);
       break;
-    }
+    case PE_ArrowUp:
+      a.setPoint(0, cx - 3, cy + 1);
+      a.setPoint(1, cx,     cy - 2); // Tip
+      a.setPoint(2, cx + 3, cy + 1);
+      break;
+      
     case PE_SpinWidgetDown:
-    case PE_ArrowDown: {
-      a.setPoints(7, d_arrow);
+      a.setPoint(0, cx - 2, cy - 1);
+      a.setPoint(1, cx,     cy + 1);
+      a.setPoint(2, cx + 2, cy - 1);
       break;
-    }
-    case PE_ArrowLeft: {
-      a.setPoints(7, l_arrow);
+    case PE_ArrowDown:
+      a.setPoint(0, cx - 3, cy - 2);
+      a.setPoint(1, cx,     cy + 1); // Tip
+      a.setPoint(2, cx + 3, cy - 2);
       break;
-    }
-    case PE_ArrowRight: {
-      a.setPoints(7, r_arrow);
-      break;
-    }
-    default: {
-      if (flags & Style_Up) {
-        a.setPoints(7, u_arrow);
-      } else {
-        a.setPoints(7, d_arrow);
-      }
-    }
-    }
-
-    const TQWMatrix oldMatrix(p->worldMatrix());
-
-    if (flags & Style_Down) {
-      p->translate(pixelMetric(PM_ButtonShiftHorizontal, ceData, elementFlags),
-                   pixelMetric(PM_ButtonShiftVertical, ceData, elementFlags));
-    }
-
-    a.translate((r.x() + r.width() / 2), (r.y() + r.height() / 2));
-    // extra-pixel-shift, correcting some visual tics...
-    switch (pe) {
+      
     case PE_ArrowLeft:
+      // Exact 11x11 geometry as requested by user (6px legs, horizontal offset)
+      // Tip at center, legs extend 5px out
+      a.setPoint(0, cx + 5, cy - 5);
+      a.setPoint(1, cx,     cy);     // Tip 1
+      a.setPoint(2, cx + 5, cy + 5);
+      break;
+      
     case PE_ArrowRight:
-      a.translate(0, -1);
+      // Exact 11x11 geometry as requested by user (6px legs, horizontal offset)
+      // Tip at center, legs extend 5px out
+      a.setPoint(0, cx - 5, cy - 5);
+      a.setPoint(1, cx,     cy);     // Tip 1
+      a.setPoint(2, cx - 5, cy + 5);
       break;
-    case PE_SpinWidgetUp:
-    case PE_SpinWidgetDown:
-      a.translate(+1, 0);
-      break;
+      
     default:
-      a.translate(0, 0);
+      // Fallback
+      if (flags & Style_Up) {
+          a.setPoint(0, cx - 3, cy + 1);
+          a.setPoint(1, cx,     cy - 2);
+          a.setPoint(2, cx + 3, cy + 1);
+      } else {
+          a.setPoint(0, cx - 3, cy - 2);
+          a.setPoint(1, cx,     cy + 1);
+          a.setPoint(2, cx + 3, cy - 2);
+      }
     }
 
     if (p->pen() == TQt::NoPen) {
       if (flags & Style_Enabled) {
-        p->setPen(cg.buttonText());
+          if (flags & Style_Down)
+             p->setPen(cg.highlightedText()); 
+          else
+             p->setPen(cg.buttonText());
       } else {
-        p->setPen(cg.highlightedText());
+        p->setPen(cg.mid());
       }
     }
-    p->drawLineSegments(a, 0, 3);
-    p->drawPoint(a[6]);
+    
+    // For side arrows (Left/Right), use two explicit drawLine pairs 
+    // offset horizontally to match the "blue/black" reference.
+    if (pe == PE_ArrowLeft) {
+        // Stroke 1 (Tip at cx)
+        p->drawLine(a[0], a[1]);
+        p->drawLine(a[1], a[2]);
+        // Stroke 2 (Offset 1px Right)
+        p->drawLine(a[0].x() + 1, a[0].y(), a[1].x() + 1, a[1].y());
+        p->drawLine(a[1].x() + 1, a[1].y(), a[2].x() + 1, a[2].y());
+    } else if (pe == PE_ArrowRight) {
+        // Stroke 1 (Tip at cx)
+        p->drawLine(a[0], a[1]);
+        p->drawLine(a[1], a[2]);
+        // Stroke 2 (Offset 1px Left)
+        p->drawLine(a[0].x() - 1, a[0].y(), a[1].x() - 1, a[1].y());
+        p->drawLine(a[1].x() - 1, a[1].y(), a[2].x() - 1, a[2].y());
+    } else {
+        // Draw 1st instance (Up/Down/Spin)
+        p->drawPolyline(a);
+        
+        // Draw 2nd instance (Double Stroke - Vertical)
+        // ONLY for Up/Down arrows to increase boldness as requested (User: "Haut/Bas sont parfait").
+        if (pe == PE_ArrowUp || pe == PE_ArrowDown) {
+            a.translate(0, 1);
+            p->drawPolyline(a);
+        }
+    }
 
-    p->setWorldMatrix(oldMatrix);
 
     break;
   }
@@ -2046,21 +2108,54 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
   case CE_MenuBarItem: {
     TQMenuItem *mi = opt.menuItem();
     bool active = flags & Style_Active;
-    bool focused = flags & Style_HasFocus;
     bool down = flags & Style_Down;
     const int text_flags =
         AlignVCenter | AlignHCenter | ShowPrefix | DontClip | SingleLine;
+    // Explicitly fill with Base color (Standard Background/White) to clear previous state.
+    // This matches standard Windows behavior (Paint Background -> Paint Highlight).
+    p->fillRect(r, cg.base());
 
-    p->fillRect(r, cg.background());
+    // Context-Aware Strict Filter:
+    // Solve "Persistence when unrolled": distinguish between "Mouse in Dropdown" (Valid) 
+    // and "Mouse on Neighbor" (Invalid).
+    
+    bool shouldPaint = (active || down) && (flags & Style_Enabled);
 
-    if (active && focused) {
-      if (down) {
-        drawPrimitive(PE_ButtonTool, p, ceData, elementFlags, r, cg,
-                      flags | Style_Down, opt);
-      } else {
-        drawPrimitive(PE_ButtonTool, p, ceData, elementFlags, r, cg, flags,
-                      opt);
-      }
+    if (shouldPaint && widget) {
+        // Check physical mouse position relative to the Menu Bar
+        TQPoint localPos = widget->mapFromGlobal(TQCursor::pos());
+        bool mouseInItem = r.contains(localPos);
+        bool mouseInMenuBar = widget->rect().contains(localPos);
+
+        if (mouseInMenuBar) {
+            // Refined Check:
+            // 1. If Menu Open ('down'): Be Strict on X (Neighbor) but Tolerant on Y (Gap to Popup).
+            //    This fixes "Hover lost when descending".
+            // 2. If Menu Closed (Hover): Be Strict on X and Y (Standard Hover).
+            bool kill = false;
+            
+            if (active && down) { // Menu Open
+                 bool xInRange = (localPos.x() >= r.left() && localPos.x() <= r.right());
+                 if (!xInRange) kill = true;
+            } else { // Menu Closed / Just Hovering
+                 if (!mouseInItem) kill = true;
+            }
+
+            if (kill) {
+                shouldPaint = false;
+                // Strip flags to prevent base style ghosting
+                flags &= ~Style_Active;
+                flags &= ~Style_Down;
+                flags &= ~Style_Sunken; 
+            }
+        }
+        // If mouse is OUTSIDE the menu bar (e.g. in the dropdown below), 
+        // we TRUST the 'down' flag to keep the parent item highlighted.
+    }
+
+    // Draw borderless highlight using the specific hover color
+    if (shouldPaint) {
+      p->fillRect(r, getColor(cg, MouseOverHighlight));
     }
 
     p->setPen(cg.foreground());
@@ -2266,7 +2361,8 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
     if (mi->popup()) {
       PrimitiveElement arrow = reverse ? PE_ArrowLeft : PE_ArrowRight;
       int dim = pixelMetric(PM_MenuButtonIndicator, ceData, elementFlags) - 1;
-      TQRect vr = visualRect(TQRect(r.x() + r.width() - 5 - 1 - dim,
+      // Moving 5px from edge + 1px for the double stroke offset = 6px
+      TQRect vr = visualRect(TQRect(r.x() + r.width() - 6 - dim,
                                     r.y() + r.height() / 2 - dim / 2, dim, dim),
                              r);
 
@@ -2283,6 +2379,7 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
         drawPrimitive(arrow, p, ceData, elementFlags, vr, cg,
                       enabled ? Style_Enabled : Style_Default);
     }
+
     break;
   }
 
@@ -2293,8 +2390,8 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
     break;
 
   case CE_MenuBarEmptyArea:
-    p->fillRect(r, cg.background());
-
+    p->eraseRect(r);
+    break;
     //             if ( _drawToolBarSeparator ) {
     //                 p->setPen( getColor(cg, PanelDark) );
     //                 p->drawLine( r.left(), r.bottom(), r.right(), r.bottom()
@@ -2367,113 +2464,73 @@ void Q4Win10Style::drawComplexControl(ComplexControl control, TQPainter *p,
     static const unsigned int handleWidth = 15;
 
     const TQComboBox *cb = dynamic_cast<const TQComboBox *>(widget);
-    bool editable = false;
-    bool hasFocus = false;
-    editable = (elementFlags & CEF_IsEditable);
-    hasFocus = (elementFlags & CEF_HasFocus);
+    bool editable = (elementFlags & CEF_IsEditable);
+    bool hasFocus = (elementFlags & CEF_HasFocus);
 
     const TQColor buttonColor = enabled ? cg.button() : cg.background();
     const TQColor inputColor =
         enabled ? (editable ? cg.base() : cg.button()) : cg.background();
 
-    uint contourFlags = 0;
+    // 1. Unified Border
+    uint contourFlags = Draw_Left | Draw_Right | Draw_Top | Draw_Bottom |
+                        Round_UpperLeft | Round_UpperRight | Round_BottomLeft |
+                        Round_BottomRight;
     if (tdehtmlWidgets.contains(cb))
       contourFlags |= Draw_AlphaBlend;
 
+    TQColor borderColor;
     if (_inputFocusHighlight && hasFocus && editable && enabled) {
-      TQRect editField = querySubControlMetrics(control, ceData, elementFlags,
-                                                SC_ComboBoxEditField,
-                                                TQStyleOption::Default, widget);
-      TQRect editFrame = r;
-      TQRect buttonFrame = r;
-
-      uint editFlags = contourFlags;
-      uint buttonFlags = contourFlags;
-
-      // Hightlight only the part of the contour next to the control button
-      if (reverseLayout) {
-        // querySubControlMetrics doesn't work right for reverse Layout
-        int dx = r.right() - editField.right();
-        editFrame.setLeft(editFrame.left() + dx);
-        buttonFrame.setRight(editFrame.left() - 1);
-        editFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_UpperRight |
-                     Round_BottomRight;
-        buttonFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft |
-                       Round_BottomLeft;
-      } else {
-        editFrame.setRight(editField.right());
-        buttonFrame.setLeft(editField.right() + 1);
-
-        editFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft |
-                     Round_BottomLeft;
-        buttonFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_UpperRight |
-                       Round_BottomRight;
-      }
-      renderContour(p, editFrame, cg.background(),
-                    getColor(cg, FocusHighlight, enabled), editFlags);
-      renderContour(p, buttonFrame, cg.background(),
-                    getColor(cg, ButtonContour, enabled), buttonFlags);
+      borderColor = getColor(cg, FocusHighlight, enabled);
     } else {
-      contourFlags |= Draw_Left | Draw_Right | Draw_Top | Draw_Bottom |
-                      Round_UpperLeft | Round_UpperRight | Round_BottomLeft |
-                      Round_BottomRight;
-      renderContour(p, r, cg.background(), getColor(cg, ButtonContour, enabled),
-                    contourFlags);
+      borderColor = cg.background().dark(118);
     }
-    // extend the contour: between input and handler...
-    p->setPen(alphaBlendColors(cg.background(),
-                               getColor(cg, ButtonContour, enabled), 50));
+    renderContour(p, r, cg.background(), borderColor, contourFlags);
+
+    // 2. Divide Interior (perfectly flush)
+    TQRect inner = TQRect(r.x() + 1, r.y() + 1, r.width() - 2, r.height() - 2);
+    TQRect RbuttonSurface, RcontentSurface;
     if (reverseLayout) {
-      p->drawLine(r.left() + 1 + handleWidth, r.top() + 1,
-                  r.left() + 1 + handleWidth, r.bottom() - 1);
+      RbuttonSurface =
+          TQRect(inner.x(), inner.y(), handleWidth, inner.height());
+      RcontentSurface = TQRect(inner.x() + handleWidth, inner.y(),
+                               inner.width() - handleWidth, inner.height());
     } else {
-      p->drawLine(r.right() - handleWidth - 1, r.top() + 1,
-                  r.right() - handleWidth - 1, r.bottom() - 1);
+      RcontentSurface = TQRect(inner.x(), inner.y(),
+                               inner.width() - handleWidth, inner.height());
+      RbuttonSurface = TQRect(inner.x() + inner.width() - handleWidth,
+                              inner.y(), handleWidth, inner.height());
     }
 
-    const TQRect RbuttonSurface(reverseLayout ? r.left() + 1
-                                              : r.right() - handleWidth,
-                                r.top() + 1, handleWidth, r.height() - 2);
-    const TQRect RcontentSurface(
-        reverseLayout ? r.left() + 1 + handleWidth + 1 : r.left() + 1,
-        r.top() + 1, r.width() - handleWidth - 3, r.height() - 2);
-
-    // handler
-
-    uint surfaceFlags =
-        Draw_Left | Draw_Right | Draw_Top | Draw_Bottom | Is_Horizontal;
+    // 3. Render Button Surface (no Draw_ flags to avoid shrinking)
+    uint btnSurfaceFlags = Is_Horizontal;
     if (reverseLayout) {
-      surfaceFlags |= Round_UpperLeft | Round_BottomLeft;
+      btnSurfaceFlags |= Round_UpperLeft | Round_BottomLeft;
     } else {
-      surfaceFlags |= Round_UpperRight | Round_BottomRight;
+      btnSurfaceFlags |= Round_UpperRight | Round_BottomRight;
     }
-
-    if (flags & Style_MouseOver) {
-      surfaceFlags |= Is_Highlight;
-      if (editable)
-        surfaceFlags |= Highlight_Left | Highlight_Right;
-      surfaceFlags |= Highlight_Top | Highlight_Bottom;
-    }
+    if (flags & Style_MouseOver)
+      btnSurfaceFlags |= Is_Highlight;
+    // Note: sunken state handled by primitive calls if needed
     renderSurface(p, RbuttonSurface, cg.background(), buttonColor,
                   getColor(cg, MouseOverHighlight),
-                  enabled ? _contrast + 3 : (_contrast / 2), surfaceFlags);
+                  enabled ? _contrast + 3 : (_contrast / 2), btnSurfaceFlags);
 
-    if (!editable) {
-      surfaceFlags =
-          Draw_Left | Draw_Right | Draw_Top | Draw_Bottom | Is_Horizontal;
+    // 4. Render Content Surface
+    if (editable) {
+      p->fillRect(RcontentSurface, inputColor);
+    } else {
+      uint contentSurfaceFlags = Is_Horizontal;
       if (reverseLayout) {
-        surfaceFlags |= Round_UpperRight | Round_BottomRight;
+        contentSurfaceFlags |= Round_UpperRight | Round_BottomRight;
       } else {
-        surfaceFlags |= Round_UpperLeft | Round_BottomLeft;
+        contentSurfaceFlags |= Round_UpperLeft | Round_BottomLeft;
       }
-
-      if (flags & Style_MouseOver) {
-        surfaceFlags |= Is_Highlight;
-        surfaceFlags |= Highlight_Top | Highlight_Bottom;
-      }
+      if (flags & Style_MouseOver)
+        contentSurfaceFlags |= Is_Highlight;
       renderSurface(p, RcontentSurface, cg.background(), buttonColor,
                     getColor(cg, MouseOverHighlight),
-                    enabled ? _contrast + 3 : (_contrast / 2), surfaceFlags);
+                    enabled ? _contrast + 3 : (_contrast / 2),
+                    contentSurfaceFlags);
       if (hasFocus) {
         drawPrimitive(PE_FocusRect, p, ceData, elementFlags,
                       TQRect(RcontentSurface.x() + 2, RcontentSurface.y() + 2,
@@ -2481,47 +2538,13 @@ void Q4Win10Style::drawComplexControl(ComplexControl control, TQPainter *p,
                              RcontentSurface.height() - 4),
                       cg);
       }
-    } else {
-      // thin frame around the input area
-      if (_inputFocusHighlight && hasFocus && editable && enabled) {
-        p->setPen(getColor(cg, FocusHighlight).dark(130));
-      } else {
-        p->setPen(inputColor.dark(130));
-      }
-      p->drawLine(RcontentSurface.x(),
-                  reverseLayout ? RcontentSurface.y() : RcontentSurface.y() + 1,
-                  RcontentSurface.x(),
-                  reverseLayout ? RcontentSurface.bottom()
-                                : RcontentSurface.bottom() - 1);
-      p->drawLine(RcontentSurface.x() + 1, RcontentSurface.y(),
-                  reverseLayout ? RcontentSurface.right() - 1
-                                : RcontentSurface.right(),
-                  RcontentSurface.y());
-      if (_inputFocusHighlight && hasFocus && editable && enabled) {
-        p->setPen(getColor(cg, FocusHighlight).light(130));
-      } else {
-        p->setPen(inputColor.light(130));
-      }
-      p->drawLine(reverseLayout ? RcontentSurface.x() : RcontentSurface.x() + 1,
-                  RcontentSurface.bottom(),
-                  reverseLayout ? RcontentSurface.right() - 1
-                                : RcontentSurface.right(),
-                  RcontentSurface.bottom());
-      p->drawLine(RcontentSurface.right(), RcontentSurface.top() + 1,
-                  RcontentSurface.right(), RcontentSurface.bottom() - 1);
-
-      // input area
-      p->fillRect(RcontentSurface.x() + 1, RcontentSurface.y() + 1,
-                  RcontentSurface.width() - 2, RcontentSurface.height() - 2,
-                  inputColor);
     }
 
+    // 5. Draw Arrow Icon
     p->setPen(cg.foreground());
     drawPrimitive(PE_SpinWidgetDown, p, ceData, elementFlags, RbuttonSurface,
                   cg, Style_Default | Style_Enabled | Style_Raised);
 
-    // TQComboBox draws the text using cg.text(), we can override this
-    // from here
     p->setPen(cg.buttonText());
     p->setBackgroundColor(cg.button());
     break;
@@ -2595,178 +2618,85 @@ void Q4Win10Style::drawComplexControl(ComplexControl control, TQPainter *p,
     static const unsigned int handleWidth = 15;
 
     const TQSpinWidget *sw = dynamic_cast<const TQSpinWidget *>(widget);
-    SFlags sflags = flags;
-    PrimitiveElement pe;
-
-    bool hasFocus = false;
-    if (sw)
-      hasFocus = sw->hasFocus();
+    bool hasFocus = sw ? sw->hasFocus() : false;
 
     const TQColor buttonColor = enabled ? cg.button() : cg.background();
     const TQColor inputColor = enabled ? cg.base() : cg.background();
 
-    // contour
-    const bool heightDividable = ((r.height() % 2) == 0);
+    // 1. Unified Border
+    uint contourFlags = Draw_Left | Draw_Right | Draw_Top | Draw_Bottom |
+                        Round_UpperLeft | Round_UpperRight | Round_BottomLeft |
+                        Round_BottomRight;
+    TQColor borderColor;
     if (_inputFocusHighlight && hasFocus && enabled) {
-      TQRect editField = querySubControlMetrics(control, ceData, elementFlags,
-                                                SC_SpinWidgetEditField,
-                                                TQStyleOption::Default, widget);
-      TQRect editFrame = r;
-      TQRect buttonFrame = r;
-
-      uint editFlags = 0;
-      uint buttonFlags = 0;
-
-      // Hightlight only the part of the contour next to the control buttons
-      if (reverseLayout) {
-        // querySubControlMetrics doesn't work right for reverse Layout
-        int dx = r.right() - editField.right();
-        editFrame.setLeft(editFrame.left() + dx);
-        buttonFrame.setRight(editFrame.left() - 1);
-        editFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_UpperRight |
-                     Round_BottomRight;
-        buttonFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft |
-                       Round_BottomLeft;
-      } else {
-        editFrame.setRight(editField.right());
-        buttonFrame.setLeft(editField.right() + 1);
-
-        editFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft |
-                     Round_BottomLeft;
-        buttonFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_UpperRight |
-                       Round_BottomRight;
-      }
-      renderContour(p, editFrame, cg.background(), cg.highlight(), editFlags);
-      renderContour(p, buttonFrame, cg.background(),
-                    getColor(cg, ButtonContour, enabled), buttonFlags);
+      borderColor = getColor(cg, FocusHighlight, enabled);
     } else {
-      renderContour(p,
-                    querySubControlMetrics(control, ceData, elementFlags,
-                                           SC_SpinWidgetFrame,
-                                           TQStyleOption::Default, widget),
-                    cg.background(), getColor(cg, ButtonContour, enabled));
+      borderColor = cg.background().dark(118);
     }
-    p->setPen(alphaBlendColors(cg.background(),
-                               getColor(cg, ButtonContour, enabled), 50));
-    p->drawLine(reverseLayout ? r.left() + 1 + handleWidth
-                              : r.right() - handleWidth - 1,
-                r.top() + 1,
-                reverseLayout ? r.left() + 1 + handleWidth
-                              : r.right() - handleWidth - 1,
-                r.bottom() - 1);
-    p->drawLine(reverseLayout ? r.left() + 1 : r.right() - handleWidth,
-                r.top() + 1 + (r.height() - 2) / 2,
-                reverseLayout ? r.left() + handleWidth : r.right() - 1,
-                r.top() + 1 + (r.height() - 2) / 2);
-    if (heightDividable)
-      p->drawLine(reverseLayout ? r.left() + 1 : r.right() - handleWidth,
-                  r.top() + 1 + (r.height() - 2) / 2 - 1,
-                  reverseLayout ? r.left() + handleWidth : r.right() - 1,
-                  r.top() + 1 + (r.height() - 2) / 2 - 1);
+    renderContour(p, r, cg.background(), borderColor, contourFlags);
 
-    // surface
-    TQRect upRect =
-        TQRect(reverseLayout ? r.left() + 1 : r.right() - handleWidth,
-               r.top() + 1, handleWidth, (r.height() - 2) / 2);
-    TQRect downRect =
-        TQRect(reverseLayout ? r.left() + 1 : r.right() - handleWidth,
-               heightDividable ? r.top() + 1 + ((r.height() - 2) / 2)
-                               : r.top() + 1 + ((r.height() - 2) / 2) + 1,
-               handleWidth, ((r.height() - 2) / 2));
-    if (heightDividable) {
-      upRect = TQRect(upRect.left(), upRect.top(), upRect.width(),
-                      upRect.height() - 1);
-      downRect = TQRect(downRect.left(), downRect.top() + 1, downRect.width(),
-                        downRect.height() - 1);
-    }
-
-    uint surfaceFlags =
-        Draw_Left | Draw_Right | Draw_Top | Draw_Bottom | Is_Horizontal;
+    // 2. Divide Interior (perfectly flush)
+    TQRect inner = TQRect(r.x() + 1, r.y() + 1, r.width() - 2, r.height() - 2);
+    TQRect RbuttonSurface, RcontentSurface;
     if (reverseLayout) {
-      surfaceFlags |= Round_UpperLeft;
+      RbuttonSurface =
+          TQRect(inner.x(), inner.y(), handleWidth, inner.height());
+      RcontentSurface = TQRect(inner.x() + handleWidth, inner.y(),
+                               inner.width() - handleWidth, inner.height());
     } else {
-      surfaceFlags |= Round_UpperRight;
+      RcontentSurface = TQRect(inner.x(), inner.y(),
+                               inner.width() - handleWidth, inner.height());
+      RbuttonSurface = TQRect(inner.x() + inner.width() - handleWidth,
+                              inner.y(), handleWidth, inner.height());
     }
-    if (sflags & Style_MouseOver) {
-      surfaceFlags |= Is_Highlight;
-      surfaceFlags |= Highlight_Top | Highlight_Left | Highlight_Right;
-    }
+
+    // 3. Render Buttons (Up/Down)
+    TQRect upRect = TQRect(RbuttonSurface.left(), RbuttonSurface.top(),
+                           RbuttonSurface.width(), RbuttonSurface.height() / 2);
+    TQRect downRect = TQRect(
+        RbuttonSurface.left(), upRect.bottom() + 1, RbuttonSurface.width(),
+        RbuttonSurface.height() - upRect.height() - 1);
+
+    // Up Button
+    uint upFlags = Is_Horizontal;
+    if (reverseLayout)
+      upFlags |= Round_UpperLeft;
+    else
+      upFlags |= Round_UpperRight;
     if (active == SC_SpinWidgetUp)
-      surfaceFlags |= Is_Sunken;
-    if (!enabled)
-      surfaceFlags |= Is_Disabled;
+      upFlags |= Is_Sunken;
+    else if ((flags & Style_MouseOver) &&
+             (active == SC_SpinWidgetUp || active == SC_None))
+      upFlags |= Is_Highlight;
+
     renderSurface(p, upRect, cg.background(), buttonColor,
-                  getColor(cg, MouseOverHighlight), _contrast, surfaceFlags);
-    surfaceFlags =
-        Draw_Left | Draw_Right | Draw_Top | Draw_Bottom | Is_Horizontal;
-    if (reverseLayout) {
-      surfaceFlags |= Round_BottomLeft;
-    } else {
-      surfaceFlags |= Round_BottomRight;
-    }
-    if (sflags & Style_MouseOver) {
-      surfaceFlags |= Is_Highlight;
-      surfaceFlags |= Highlight_Bottom | Highlight_Left | Highlight_Right;
-    }
+                  getColor(cg, MouseOverHighlight),
+                  enabled ? _contrast + 3 : (_contrast / 2), upFlags);
+
+    // Down Button
+    uint downFlags = Is_Horizontal;
+    if (reverseLayout)
+      downFlags |= Round_BottomLeft;
+    else
+      downFlags |= Round_BottomRight;
     if (active == SC_SpinWidgetDown)
-      surfaceFlags |= Is_Sunken;
-    if (!enabled)
-      surfaceFlags |= Is_Disabled;
+      downFlags |= Is_Sunken;
+    else if ((flags & Style_MouseOver) &&
+             (active == SC_SpinWidgetDown || active == SC_None))
+      downFlags |= Is_Highlight;
+
     renderSurface(p, downRect, cg.background(), buttonColor,
-                  getColor(cg, MouseOverHighlight), _contrast, surfaceFlags);
+                  getColor(cg, MouseOverHighlight),
+                  enabled ? _contrast + 3 : (_contrast / 2), downFlags);
 
-    // icons...
-    sflags = Style_Default | Style_Enabled;
-    if (active == SC_SpinWidgetUp) {
-      sflags |= Style_On;
-      sflags |= Style_Sunken;
-    } else
-      sflags |= Style_Raised;
-    if (sw->buttonSymbols() == TQSpinWidget::PlusMinus)
-      pe = PE_SpinWidgetPlus;
-    else
-      pe = PE_SpinWidgetUp;
+    // 4. Content
+    p->fillRect(RcontentSurface, inputColor);
+
+    // 5. Draw Arrows
     p->setPen(cg.foreground());
-    drawPrimitive(pe, p, ceData, elementFlags, upRect, cg, sflags);
-
-    sflags = Style_Default | Style_Enabled;
-    if (active == SC_SpinWidgetDown) {
-      sflags |= Style_On;
-      sflags |= Style_Sunken;
-    } else
-      sflags |= Style_Raised;
-    if (sw->buttonSymbols() == TQSpinWidget::PlusMinus)
-      pe = PE_SpinWidgetMinus;
-    else
-      pe = PE_SpinWidgetDown;
-    p->setPen(cg.foreground());
-    drawPrimitive(pe, p, ceData, elementFlags, downRect, cg, sflags);
-
-    // thin frame around the input area
-    const TQRect Rcontent =
-        TQRect(reverseLayout ? r.left() + 1 + handleWidth + 1 : r.left() + 1,
-               r.top() + 1, r.width() - 1 - 2 - handleWidth, r.height() - 2);
-    if (_inputFocusHighlight && hasFocus && enabled) {
-      p->setPen(getColor(cg, FocusHighlight).dark(130));
-    } else {
-      p->setPen(inputColor.dark(130));
-    }
-    p->drawLine(Rcontent.left(),
-                reverseLayout ? Rcontent.top() : Rcontent.top() + 1,
-                Rcontent.left(),
-                reverseLayout ? Rcontent.bottom() : Rcontent.bottom() - 1);
-    p->drawLine(Rcontent.left() + 1, Rcontent.top(),
-                reverseLayout ? Rcontent.right() - 1 : Rcontent.right(),
-                Rcontent.top());
-    if (_inputFocusHighlight && hasFocus && enabled) {
-      p->setPen(getColor(cg, FocusHighlight).light(130));
-    } else {
-      p->setPen(inputColor.light(130));
-    }
-    p->drawLine(Rcontent.left() + 1, Rcontent.bottom(), Rcontent.right() - 1,
-                Rcontent.bottom());
-    p->drawLine(Rcontent.right(), Rcontent.top() + 1, Rcontent.right(),
-                reverseLayout ? Rcontent.bottom() - 1 : Rcontent.bottom());
+    drawPrimitive(PE_SpinWidgetUp, p, ceData, elementFlags, upRect, cg, flags);
+    drawPrimitive(PE_SpinWidgetDown, p, ceData, elementFlags, downRect, cg,
+                  flags);
 
     break;
   }
@@ -2933,13 +2863,14 @@ int Q4Win10Style::pixelMetric(PixelMetric m,
     // SLIDER
     // ------
   case PM_SliderLength:
-    return 11;
+    return 8; // Thinner handle along the groove
+  case PM_SliderControlThickness:
+    return 18; // Height of handle for horizontal slider
 
     // MENU INDICATOR
     // --------------
   case PM_MenuButtonIndicator:
-    return 8;
-
+    return 12; // Adjusted to permit a 11px high chevron
     // CHECKBOXES / RADIO BUTTONS
     // --------------------------
   case PM_ExclusiveIndicatorWidth:  // Radiobutton size
@@ -2954,7 +2885,7 @@ int Q4Win10Style::pixelMetric(PixelMetric m,
     return 1;
 
   case PM_MenuBarFrameWidth:
-    return 1;
+    return 0; // Use 0 to match standard Windows/Motif and avoid invalidation offsets
 
   case PM_DefaultFrameWidth: {
     if (widget && ::tqt_cast<TQPopupMenu *>(widget))
@@ -3109,6 +3040,9 @@ int Q4Win10Style::styleHint(StyleHint stylehint,
   case SH_MenuBar_AltKeyNavigation:
     return 1; // true - Alt key activates menu
 
+  case SH_MenuBar_MouseTracking:
+    return 1; // true - Use standard TQt tracking (like Windows)
+
   // Windows 10 style: no underlined accelerators
   case SH_UnderlineAccelerator:
     return 0; // false - never show underlined accelerators
@@ -3129,9 +3063,6 @@ bool Q4Win10Style::objectEventHandler(const TQStyleControlElementData &ceData,
 
   if (ceData.widgetObjectTypes.contains("TQObject")) {
     TQObject *obj = reinterpret_cast<TQObject *>(source);
-
-    if (!obj->isWidgetType())
-      return false;
 
     // Track show events for progress bars
     // Animations disabled
