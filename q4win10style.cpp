@@ -468,7 +468,7 @@ void Q4Win10Style::renderPixel(TQPainter *p, const TQPoint &pos,
 void Q4Win10Style::renderButton(TQPainter *p, const TQRect &r,
                                 const TQColorGroup &g, bool sunken,
                                 bool mouseOver, bool horizontal, bool enabled,
-                                bool tdehtmlMode) const {
+                                bool tdehtmlMode, bool isDefault) const {
   // small fix for the kicker buttons...
   if (kickerMode)
     enabled = true;
@@ -509,7 +509,15 @@ void Q4Win10Style::renderButton(TQPainter *p, const TQRect &r,
     surfaceFlags |= Round_UpperLeft | Round_UpperRight | Round_BottomLeft |
                     Round_BottomRight;
 
-    renderContour(p, r, g.background(), getColor(g, ButtonContour),
+    WidgetState ws = IsEnabled;
+    if (!enabled)
+      ws = IsDisabled;
+    else if (mouseOver || isDefault)
+      ws = IsHighlighted; // Hover/Selected = Highlight
+    else if (sunken)
+      ws = IsPressed;
+
+    renderContour(p, r, g.background(), getColor(g, ButtonContour, ws),
                   contourFlags);
     renderSurface(
         p, TQRect(r.left() + 1, r.top() + 1, r.width() - 2, r.height() - 2),
@@ -529,24 +537,6 @@ void Q4Win10Style::renderButton(TQPainter *p, const TQRect &r,
   p->setPen(oldPen);
 }
 
-void Q4Win10Style::renderDot(TQPainter *p, const TQPoint &point,
-                             const TQColor &baseColor, const bool thick,
-                             const bool sunken) const {
-  const TQColor topColor = alphaBlendColors(
-      baseColor, sunken ? baseColor.dark(130) : baseColor.light(150), 70);
-  const TQColor bottomColor = alphaBlendColors(
-      baseColor, sunken ? baseColor.light(150) : baseColor.dark(130), 70);
-  p->setPen(topColor);
-  p->drawLine(point.x(), point.y(), point.x() + 1, point.y());
-  p->drawPoint(point.x(), point.y() + 1);
-  p->setPen(bottomColor);
-  if (thick) {
-    p->drawLine(point.x() + 1, point.y() + 2, point.x() + 2, point.y() + 2);
-    p->drawPoint(point.x() + 2, point.y() + 1);
-  } else {
-    p->drawPoint(point.x() + 1, point.y() + 1);
-  }
-}
 
 void Q4Win10Style::renderGradient(TQPainter *painter, const TQRect &rect,
                                   const TQColor &c1, const TQColor &c2,
@@ -666,22 +656,6 @@ void Q4Win10Style::renderPanel(TQPainter *p, const TQRect &r,
   } else {
     renderContour(p, r, g.background(), getColor(g, PanelContour));
 
-    if (pseudo3d) {
-      if (sunken) {
-        p->setPen(getColor(g, PanelDark));
-      } else {
-        p->setPen(getColor(g, PanelLight));
-      }
-      p->drawLine(r.left() + 2, r.top() + 1, r.right() - 2, r.top() + 1);
-      p->drawLine(r.left() + 1, r.top() + 2, r.left() + 1, r.bottom() - 2);
-      if (sunken) {
-        p->setPen(getColor(g, PanelLight));
-      } else {
-        p->setPen(getColor(g, PanelDark));
-      }
-      p->drawLine(r.left() + 2, r.bottom() - 1, r.right() - 2, r.bottom() - 1);
-      p->drawLine(r.right() - 1, r.top() + 2, r.right() - 1, r.bottom() - 2);
-    }
   }
 }
 
@@ -1247,7 +1221,8 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   case PE_ButtonCommand: {
     bool tdehtmlMode =
         opt.isDefault() ? false : tdehtmlWidgets.contains(opt.widget());
-    renderButton(p, r, cg, (on || down), mouseOver, true, enabled, tdehtmlMode);
+    renderButton(p, r, cg, (on || down), mouseOver, true, enabled, tdehtmlMode,
+                 (flags & Style_ButtonDefault));
     break;
   }
 
@@ -1571,7 +1546,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
   }
 
   case PE_PanelPopup: {
-    p->fillRect(r, cg.background().light(105));
+    p->fillRect(r, cg.background());
     renderContour(p, r, cg.background(), cg.background().dark(118),
                   Draw_Left | Draw_Right | Draw_Top | Draw_Bottom);
     break;
@@ -2137,7 +2112,7 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
       // Don't leave blank holes if we set NoBackground for the TQPopupMenu.
       // This only happens when the popupMenu spans more than one column.
       if (ceData.bgPixmap.isNull())
-        p->fillRect(r, cg.background().light(105));
+        p->fillRect(r, cg.background());
 
       break;
     }
@@ -2160,7 +2135,7 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
         if (ceData.bgPixmap.isNull())
           p->drawPixmap(r.topLeft(), ceData.bgPixmap, r);
         else
-          p->fillRect(r, cg.background().light(105));
+          p->fillRect(r, cg.background());
         if (_drawFocusRect)
           p->drawWinFocusRect(r);
       }
@@ -2170,7 +2145,7 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
       p->drawPixmap(r.topLeft(), ceData.bgPixmap, r);
     // Draw a solid background
     else
-      p->fillRect(r, cg.background().light(105));
+      p->fillRect(r, cg.background());
     // Are we a menu item separator?
     if (mi->isSeparator()) {
       p->setPen(cg.mid());
@@ -3057,8 +3032,9 @@ TQColor Q4Win10Style::getColor(const TQColorGroup &cg, const ColorType t,
   const bool highlighted = (s == IsHighlighted);
   switch (t) {
   case ButtonContour:
-    return enabled ? cg.button().dark(130 + _contrast * 8)
-                   : cg.background().dark(120 + _contrast * 8);
+    if (highlighted)
+      return getColor(cg, FocusHighlight);
+    return cg.background().dark(118);
   case DragButtonContour: {
     if (enabled) {
       if (pressed)

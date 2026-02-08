@@ -186,7 +186,7 @@ protected:
   void renderButton(TQPainter *p, const TQRect &r, const TQColorGroup &g,
                     bool sunken = false, bool mouseOver = false,
                     bool horizontal = true, bool enabled = true,
-                    bool tdehtmlMode = false) const;
+                    bool tdehtmlMode = false, bool isDefault = false) const;
 
   void renderPanel(TQPainter *p, const TQRect &r, const TQColorGroup &g,
                    const bool pseudo3d = true, const bool sunken = true) const;
