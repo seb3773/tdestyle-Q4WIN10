@@ -740,6 +740,7 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
                   contourFlags);
 
     // surface
+    /* --- BEGIN DISABLED RELIEF ---
     if (!bottom) {
       p->setPen(getColor(g, PanelLight));
       p->drawLine(Rs.x() + 1, Rs.y(), Rs.right() - 1, Rs.y());
@@ -756,6 +757,7 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
       renderGradient(p, TQRect(Rs.right(), Rs.y(), 1, Rs.height() - 1),
                      getColor(g, PanelDark), getColor(g, PanelDark2));
     }
+    --- END DISABLED RELIEF --- */
 
     // some "position specific" paintings...
     // draw parts of the inactive tabs around...
@@ -897,14 +899,16 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
         contourFlags = Draw_Right | Draw_Bottom;
       }
     }
-    renderContour(p, Rc, g.background(), getColor(g, ButtonContour),
+    renderContour(p, Rc, g.background(), g.background(),
                   contourFlags);
 
     uint surfaceFlags = Is_Horizontal;
+    /* --- BEGIN DISABLED HOVER ---
     if (mouseOver) {
       surfaceFlags |= (bottom ? Highlight_Bottom : Highlight_Top);
       surfaceFlags |= Is_Highlight;
     }
+    --- END DISABLED HOVER --- */
     if ((isFirst && !reverseLayout) || (isLast && reverseLayout)) {
       if (!bottom)
         surfaceFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft;
@@ -918,21 +922,20 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
     } else {
       surfaceFlags |= Draw_Top | Draw_Bottom;
     }
-    renderSurface(p, Rs, g.background(), g.button(),
+    renderSurface(p, Rs, g.background(), g.background().dark(110),
                   getColor(g, MouseOverHighlight), _contrast, surfaceFlags);
 
     // some "position specific" paintings...
     // fake parts of the panel border
     if (!bottom) {
-      p->setPen(
-          alphaBlendColors(g.background(), getColor(g, PanelContour), 50));
+      p->setPen(g.background());
       p->drawLine(Rb.x(), Rb.y(),
                   ((isLast && !reverseLayout) ||
                    (isFirst && reverseLayout && cornerWidget))
                       ? Rb.right()
                       : Rb.right() - 1,
                   Rb.y());
-      p->setPen(getColor(g, PanelLight));
+      p->setPen(g.background());
       p->drawLine(Rb.x(), Rb.y() + 1,
                   ((isLast && !reverseLayout) ||
                    (isFirst && reverseLayout && cornerWidget))
@@ -940,15 +943,14 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
                       : Rb.right() - 1,
                   Rb.y() + 1);
     } else {
-      p->setPen(
-          alphaBlendColors(g.background(), getColor(g, PanelContour), 50));
+      p->setPen(g.background());
       p->drawLine(Rb.x(), Rb.bottom(),
                   ((isLast && !reverseLayout) ||
                    (isFirst && reverseLayout && cornerWidget))
                       ? Rb.right()
                       : Rb.right() - 1,
                   Rb.bottom());
-      p->setPen(getColor(g, PanelDark));
+      p->setPen(g.background());
       p->drawLine(Rb.x(), Rb.bottom() - 1,
                   ((isLast && !reverseLayout) ||
                    (isFirst && reverseLayout && cornerWidget))
@@ -975,47 +977,35 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
             getColor(g, PanelContour), 150));
         p->drawPoint(Rb.x() + 1, Rb.y());
       } else {
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 50));
+        p->setPen(g.background());
         p->drawPoint(Rb.x() + 1, Rb.bottom() - 1);
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.x(), Rb.bottom() - 1);
         p->setPen(g.background());
         p->drawPoint(Rb.x(), Rb.bottom());
-        p->setPen(alphaBlendColors(
-            alphaBlendColors(g.background(), getColor(g, ButtonContour), 50),
-            getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.x() + 1, Rb.bottom());
       }
     } else if (isFirst && reverseLayout && !cornerWidget)
     // reverse layout
     {
       if (!bottom) {
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 50));
+        p->setPen(g.background());
         p->drawPoint(Rb.right() - 1, Rb.y() + 1);
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.right(), Rb.y() + 1);
         p->setPen(g.background());
         p->drawPoint(Rb.right(), Rb.y());
-        p->setPen(alphaBlendColors(
-            alphaBlendColors(g.background(), getColor(g, ButtonContour), 50),
-            getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.right() - 1, Rb.y());
       } else {
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 50));
+        p->setPen(g.background());
         p->drawPoint(Rb.right() - 1, Rb.bottom() - 1);
-        p->setPen(
-            alphaBlendColors(g.background(), getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.right(), Rb.bottom() - 1);
         p->setPen(g.background());
         p->drawPoint(Rb.right(), Rb.bottom());
-        p->setPen(alphaBlendColors(
-            alphaBlendColors(g.background(), getColor(g, ButtonContour), 50),
-            getColor(g, PanelContour), 150));
+        p->setPen(g.background());
         p->drawPoint(Rb.right() - 1, Rb.bottom());
       }
     }
@@ -1508,22 +1498,6 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
                         ? TQColor(cg.background().light(100 + _contrast))
                         : cg.background();
     p->fillRect(r, color);
-    if (w > h) {
-      if (h > 4) {
-        int ycenter = r.height() / 2;
-        for (int k = 2 * r.width() / 10; k < 8 * r.width() / 10; k += 5) {
-          renderDot(p, TQPoint(k, ycenter - 1), color, false, true);
-        }
-      }
-    } else {
-      if (w > 4) {
-        int xcenter = r.width() / 2;
-        for (int k = 2 * r.height() / 10; k < 8 * r.height() / 10; k += 5) {
-          renderDot(p, TQPoint(xcenter - 1, k), color, false, true);
-        }
-      }
-    }
-
     break;
   }
 
@@ -1578,24 +1552,10 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
       renderContour(p, r, cg.background(),
                     getColor(cg, FocusHighlight, enabled), contourFlags);
     } else {
-      renderContour(p, r, cg.background(), getColor(cg, ButtonContour, enabled),
+      renderContour(p, r, cg.background(), cg.background().dark(118),
                     contourFlags);
     }
-    const TQColor contentColor = enabled ? cg.base() : cg.background();
-    if (_inputFocusHighlight && hasFocus && !isReadOnly && isEnabled) {
-      p->setPen(getColor(cg, FocusHighlight).dark(130));
-    } else {
-      p->setPen(contentColor.dark(130));
-    }
-    p->drawLine(r.left() + 1, r.top() + 2, r.left() + 1, r.bottom() - 2);
-    p->drawLine(r.left() + 2, r.top() + 1, r.right() - 2, r.top() + 1);
-    if (_inputFocusHighlight && hasFocus && !isReadOnly && isEnabled) {
-      p->setPen(getColor(cg, FocusHighlight).light(130));
-    } else {
-      p->setPen(contentColor.light(130));
-    }
-    p->drawLine(r.left() + 2, r.bottom() - 1, r.right() - 2, r.bottom() - 1);
-    p->drawLine(r.right() - 1, r.top() + 2, r.right() - 1, r.bottom() - 2);
+    // Relief drawing removed for modern look
     break;
   }
 
@@ -1606,13 +1566,13 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
 
   case PE_TabBarBase: // Still not sure what this one does
   case PE_PanelTabWidget: {
-    renderPanel(p, r, cg, true, sunken);
+    renderPanel(p, r, cg, false, sunken);
     break;
   }
 
   case PE_PanelPopup: {
     p->fillRect(r, cg.background().light(105));
-    renderContour(p, r, cg.background(), cg.background().dark(200),
+    renderContour(p, r, cg.background(), cg.background().dark(118),
                   Draw_Left | Draw_Right | Draw_Top | Draw_Bottom);
     break;
   }
@@ -1728,24 +1688,9 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
     break;
   }
 
-  case PE_MenuItemIndicatorFrame: {
-    int x, y, w, h;
-    r.rect(&x, &y, &w, &h);
-    int checkcol = styleHint(SH_MenuIndicatorColumnWidth, ceData, elementFlags,
-                             opt, NULL, NULL);
-    TQRect cr = visualRect(TQRect(x + 2, y + 2, checkcol - 1, h - 4), r);
-    qDrawShadePanel(p, cr.x(), cr.y(), cr.width(), cr.height(), cg, true, 1,
-                    &cg.brush(TQColorGroup::Midlight));
-    break;
-  }
+  case PE_MenuItemIndicatorFrame:
   case PE_MenuItemIndicatorIconFrame: {
-    int x, y, w, h;
-    r.rect(&x, &y, &w, &h);
-    int checkcol = styleHint(SH_MenuIndicatorColumnWidth, ceData, elementFlags,
-                             opt, NULL, NULL);
-    TQRect cr = visualRect(TQRect(x + 2, y + 2, checkcol - 1, h - 4), r);
-    qDrawShadePanel(p, cr.x(), cr.y(), cr.width(), cr.height(), cg, true, 1,
-                    &cg.brush(TQColorGroup::Midlight));
+    // Windows 10 style: checkmarks are flat in menus, no recessed frame/box.
     break;
   }
   case PE_MenuItemIndicatorCheck: {
@@ -1994,11 +1939,31 @@ void Q4Win10Style::drawControl(ControlElement element, TQPainter *p,
     case TQTabBar::RoundedBelow:
       renderTab(p, r, cg, mouseOver, selected, true, pos, false, cornerWidget);
       break;
-    default:
+    }
+    break;
+  }
+
+  case CE_TabBarLabel: {
+    if (!(flags & Style_Selected)) {
+      TQColor grey(125, 125, 125);
+      
+      const TQTab* tab = opt.tab();
+      TQString text = ceData.text;
+      const TQPixmap* icon = ceData.fgPixmap.isNull() ? 0 : &ceData.fgPixmap;
+      
+      if (tab) {
+        if (text.isEmpty()) text = tab->text();
+        // If we still have No icon from ceData, we could try to get it from tab iconset,
+        // but drawItem takes a Pixmap*, so we'd need to extract it. 
+        // For now, let's at least fix the text.
+      }
+
+      drawItem(p, r, AlignCenter | ShowPrefix, cg, (elementFlags & CEF_IsEnabled),
+               icon, text, -1, &grey);
+    } else {
       TDEStyle::drawControl(element, p, ceData, elementFlags, r, cg, flags, opt,
                             widget);
     }
-
     break;
   }
 
@@ -3119,7 +3084,7 @@ TQColor Q4Win10Style::getColor(const TQColorGroup &cg, const ColorType t,
     }
   }
   case PanelContour:
-    return cg.background().dark(160 + _contrast * 8);
+    return cg.background().dark(118);
   case PanelDark:
     return alphaBlendColors(cg.background(),
                             cg.background().dark(120 + _contrast * 5), 110);
