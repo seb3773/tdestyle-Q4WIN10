@@ -13,7 +13,7 @@ Version 2.0 - Optimized and Refined ;-)
     *   Cleaned up visual noise (removed gradients, shadows, and rounded corners on windows).
 
 *   **Optimized Performance:**
-    *   **Light Binary**: ~110KB (style) and ~37KB (config).
+    *   **Light Binary**: ~135KB (style) and ~37KB (config).
     *   Removed unused code: Animations and legacy bitmaps.
     *   Compiled with `-O2 -flto -ffast-math -fmerge-all-constants`.
 
