@@ -58,21 +58,39 @@ This style is a plugin for TDE and relies on **TDEBase** headers and build syste
 **Requirements:**
 *   Trinity Desktop Environment source tree (`tdebase`).
 *   TQt3/TDE development headers.
-*   CMake.
 
 ### Standalone Compilation (Recommended)
 
 This style can be built independently of the full `tdebase` tree.
 
-1.  Navigate to the `q4win10` directory.
-2.  Build and install:
+1.  Install development headers (example for Debian/Ubuntu with Trinity packages):
+    ```bash
+    sudo apt-get install tdelibs14-trinity-dev tdebase-trinity-dev
+    ```
+
+2.  Check your Trinity prefix (commonly `/opt/trinity`):
+    ```bash
+    tde-config --prefix
+    ```
+    If your prefix is not `/opt/trinity`, edit `TDE_PREFIX` at the top of `Makefile` accordingly.
+
+3.  Navigate to the `Q4WIN10` directory.
+4.  Build and install:
     ```bash
     make
     sudo make install
-    tdebuildsyscoca
     ```
 
-3.  Restart Trinity or change style in TDE Control Center.
+5.  Rebuild the TDE service cache:
+    ```bash
+    /opt/trinity/bin/tdebuildsycoca
+    ```
+    If `/opt/trinity/bin` is already in your `PATH`, you can simply run:
+    ```bash
+    tdebuildsycoca
+    ```
+
+6.  Restart Trinity or change style in TDE Control Center.
 
 ### Integrated Compilation (TDE Core)
 1.  Place the `q4win10` directory into `tdebase/kstyles/`.
