@@ -4,7 +4,7 @@
 */
 
 #include "q4win10styleconf.h"
-#include <kdemacros.h>
+
 
 #include <tdeglobal.h>
 #include <tdelocale.h>
@@ -14,7 +14,7 @@
 #include <tqslider.h>
 
 extern "C" {
-KDE_EXPORT TQWidget *allocate_tdestyle_config(TQWidget *parent) {
+TQ_EXPORT TQWidget *allocate_tdestyle_config(TQWidget *parent) {
   TDEGlobal::locale()->insertCatalogue("q4win10style");
   return new Q4Win10StyleConfig(parent);
 }
