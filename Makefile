@@ -24,6 +24,13 @@ CXXFLAGS := -fPIC \
     -fdata-sections -ffunction-sections -fomit-frame-pointer \
     -ffast-math -fmerge-all-constants -flto
 
+# TDE Version Detection for Cross-Version Compatibility
+TDE_VERSION := $(shell tde-config --version 2>/dev/null | sed -n 's/^TDE: R//p')
+# If TDE >= 14.1.5, add deprecated TQT macros
+ifeq ($(shell expr "$(TDE_VERSION)" \>= "14.1.5"), 1)
+    CXXFLAGS += -DTQT_SIGNAL=TQ_SIGNAL -DTQT_SLOT=TQ_SLOT
+endif
+
 LDFLAGS := -shared -Wl,--gc-sections -Wl,--as-needed -flto -O2 \
     -L$(TDE_LIB) \
     -ltdecore -ltdefx -ltqt-mt
