@@ -13,7 +13,7 @@ Version 2.0 - Optimized and Refined ;-)
     *   Cleaned up visual noise (removed gradients, shadows, and rounded corners on windows).
 
 *   **Optimized Performance:**
-    *   **Light Binary**: ~110KB (style) and ~37KB (config).
+    *   **Light Binary**: ~142KB (style) and ~37KB (config).
     *   Removed unused code: Animations and legacy bitmaps.
     *   Compiled with `-O2 -flto -ffast-math -fmerge-all-constants`.
 
@@ -22,13 +22,13 @@ Version 2.0 - Optimized and Refined ;-)
     *   Removed dotted branch lines for a cleaner look.
     *   Replaced `[+]`/`[-]` with sleek **Double Stroke** arrows matching the menus (Right Arrow for collapsed, rotated Down Arrow for expanded).
 *   **Scrollbar Improvements**:
-    *   Darkened slider color (Normal `dark(105)`, Hover `dark(115)`, Active `dark(125)`) for better visibility and contrast.
+    *   Darkened slider color (Normal `dark(105)`, Active `dark(125)`) for better visibility and contrast.
 
 ## Context-Aware Window Borders (X11 Integration)
 
 I implemented an X11 Atom-based communication to allow the window decoration to match the menu bar color (Standard Base Color).
 
-### Implementation Details
+### Implementation Details:
 The Style Plugin acts as the **Sender**.
 - In `polish(TQMenuBar*)`, we calculate the menu height.
 - We set an X11 property `_Q4WIN10_MENUBAR_HEIGHT` (CARDINAL 32) on the top-level window.
@@ -37,7 +37,7 @@ The Style Plugin acts as the **Sender**.
 ### Impact
 ** Negligible to Null.**
 
-- **Memory**: The Style sets a single integer property (CARDINAL 32) on the X11 window. This consumes only 4 bytes of memory in the X server. It is infinitesimal.
+- **Memory**: The Style sets a single integer property (CARDINAL 32) on the X11 window. This consumes only 4 bytes of memory in the X server. It is infinitesimal :-)
 - **CPU**:
     - **Style**: The `XChangeProperty` call happens ONLY during the creation (`polish`) of the menu bar. Cost: 1 X11 round-trip (a few microseconds), once per window.
     - **Decoration**: The `XGetWindowProperty` call happens at each border paint event (`paintEvent`). It is a very fast read-only call, optimized by the local X server (Shared Memory). Crucially, the decoration only repaints if you move, resize, or activate the window. If the window is stable, 0 CPU. Compared to the cost of drawing pixmaps and text, reading an integer is invisible.
@@ -71,15 +71,34 @@ This style is a plugin for TDE and relies on **TDEBase** headers and build syste
 
 This style can be built independently of the full `tdebase` tree.
 
-1.  Navigate to the `q4win10` directory.
-2.  Build and install:
+1.  Install development headers (example for Debian/Ubuntu with Trinity packages):
+    ```bash
+    sudo apt-get install tdelibs14-trinity-dev tdebase-trinity-dev
+    ```
+
+2.  Check your Trinity prefix (commonly `/opt/trinity`):
+    ```bash
+    tde-config --prefix
+    ```
+    If your prefix is not `/opt/trinity`, edit `TDE_PREFIX` at the top of `Makefile` accordingly.
+
+3.  Navigate to the `Q4WIN10` directory.
+4.  Build and install:
     ```bash
     make
     sudo make install
-    tdebuildsyscoca
     ```
 
-3.  Restart Trinity or change style in TDE Control Center.
+5.  Rebuild the TDE service cache:
+    ```bash
+    /opt/trinity/bin/tdebuildsycoca
+    ```
+    If `/opt/trinity/bin` is already in your `PATH`, you can simply run:
+    ```bash
+    tdebuildsycoca
+    ```
+
+6.  Restart Trinity or change style in TDE Control Center.
 
 ### Integrated Compilation (TDE Core)
 1.  Place the `q4win10` directory into `tdebase/kstyles/`.
