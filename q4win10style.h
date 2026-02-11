@@ -278,14 +278,6 @@ private:
       bool match = (type == other.type) && (width == other.width) &&
                    (height == other.height) && (c1Rgb == other.c1Rgb) &&
                    (c1Rgb == other.c1Rgb) && (horizontal == other.horizontal);
-      //             if(!match) {
-      //                 tqDebug("operator ==: CacheEntries don't match!");
-      //                 tqDebug("width: %d\t\tother width: %d", width,
-      //                 other.width); tqDebug("height: %d\t\tother height: %d",
-      //                 height, other.height); tqDebug("fgRgb: %d\t\tother
-      //                 fgRgb: %d", fgRgb, other.fgRgb); tqDebug("bgRgb:
-      //                 %d\t\tother bgRgb: %d", bgRgb, other.bgRgb);
-      //                 tqDebug("surfaceFlags: %d\t\tother surfaceFlags: %d",
       return match;
     }
   };
@@ -295,8 +287,7 @@ private:
     // For KPE_ListViewBranch
 
   // For KPE_ListViewBranch
-  mutable TQBitmap *verticalLine;
-  mutable TQBitmap *horizontalLine;
+
 };
 
 #endif // __Q4WIN10STYLE_H

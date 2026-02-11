@@ -47,6 +47,7 @@
 #include <tqdrawutil.h>
 #include <tqheader.h>
 #include <tqimage.h>
+#include <tqlistview.h>
 #include <tqlineedit.h>
 #include <tqlistbox.h>
 #include <tqmenubar.h>
@@ -149,8 +150,7 @@ TQ_EXPORT_PLUGIN(Q4Win10StylePlugin)
 Q4Win10Style::Q4Win10Style()
     : TDEStyle(AllowMenuTransparency, WindowsStyleScrollBar), kickerMode(false),
       kornMode(false), flatMode(false) {
-  horizontalLine = 0;
-  verticalLine = 0;
+
 
   // Hardcoded options for flat Windows 10 style - no config panel
   _contrast = 6;
@@ -179,8 +179,7 @@ Q4Win10Style::Q4Win10Style()
 
 Q4Win10Style::~Q4Win10Style() {
   delete pixmapCache;
-  delete horizontalLine;
-  delete verticalLine;
+
 }
 
 void Q4Win10Style::applicationPolish(const TQStyleControlElementData &ceData,
@@ -1067,73 +1066,7 @@ void Q4Win10Style::drawTDEStylePrimitive(
   }
 
   // copied and slightly modified from TDEStyle.
-  case KPE_ListViewBranch: {
-    // Typical Windows style listview branch element (dotted line).
 
-    // Create the dotline pixmaps if not already created
-    if (!verticalLine) {
-      // make 128*1 and 1*128 bitmaps that can be used for
-      // drawing the right sort of lines.
-      verticalLine = new TQBitmap(1, 129, true);
-      horizontalLine = new TQBitmap(128, 1, true);
-      TQPointArray a(64);
-      TQPainter p2;
-      p2.begin(verticalLine);
-
-      int i;
-      for (i = 0; i < 64; i++)
-        a.setPoint(i, 0, i * 2 + 1);
-      p2.setPen(color1);
-      p2.drawPoints(a);
-      p2.end();
-      TQApplication::flushX();
-      verticalLine->setMask(*verticalLine);
-
-      p2.begin(horizontalLine);
-      for (i = 0; i < 64; i++)
-        a.setPoint(i, i * 2 + 1, 0);
-      p2.setPen(color1);
-      p2.drawPoints(a);
-      p2.end();
-      TQApplication::flushX();
-      horizontalLine->setMask(*horizontalLine);
-    }
-
-    p->setPen(cg.mid());
-
-    if (flags & Style_Horizontal) {
-      int point = r.x();
-      int other = r.y();
-      int end = r.x() + r.width();
-      int thickness = r.height();
-
-      while (point < end) {
-        int i = 128;
-        if (i + point > end)
-          i = end - point;
-        p->drawPixmap(point, other, *horizontalLine, 0, 0, i, thickness);
-        point += i;
-      }
-
-    } else {
-      int point = r.y();
-      int other = r.x();
-      int end = r.y() + r.height();
-      int thickness = r.width();
-      int pixmapoffset = (flags & Style_NoChange) ? 0 : 1; // ### Hackish
-
-      while (point < end) {
-        int i = 128;
-        if (i + point > end)
-          i = end - point;
-        p->drawPixmap(other, point, *verticalLine, 0, pixmapoffset, thickness,
-                      i);
-        point += i;
-      }
-    }
-
-    break;
-  }
 
   default:
     TDEStyle::drawTDEStylePrimitive(kpe, p, ceData, elementFlags, r, cg, flags,
@@ -1256,11 +1189,15 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
 
   case PE_ScrollBarSlider: {
     // Windows 10 style: slider uses button background color
-    TQColor sliderColor = cg.button();
-    if (flags & Style_MouseOver)
-      sliderColor = sliderColor.dark(110);
-    else if (flags & (Style_Active | Style_Down))
-      sliderColor = sliderColor.dark(120);
+    // Explicit contrast steps to ensure visibility:
+    // Normal: dark(105) 
+    // Active: dark(125) (distinct step)
+    // Note: Hover state removed as SH_ScrollBar_RollOver is not enabled.
+    TQColor sliderColor;
+    if (flags & (Style_Active | Style_Down))
+      sliderColor = cg.button().dark(125);
+    else
+      sliderColor = cg.button().dark(105);
 
     const TQColor borderColor = sliderColor;
 
@@ -1590,7 +1527,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
 
   case PE_DockWindowHandle: {
     // Narrower Windows 10 style grip: 2px solid rectangle
-    // Using cg.button() color as requested (standard button color)
+    // Using cg.button() color (standard button color)
     int handleWidth = 2;
     TQRect grip;
     if (horiz) { // vertical handle for horizontal toolbar
@@ -1721,7 +1658,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
       break;
       
     case PE_ArrowLeft:
-      // Exact 11x11 geometry as requested by user (6px legs, horizontal offset)
+      // Exact 11x11 geometry (6px legs, horizontal offset)
       // Tip at center, legs extend 5px out
       a.setPoint(0, cx + 5, cy - 5);
       a.setPoint(1, cx,     cy);     // Tip 1
@@ -1729,7 +1666,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
       break;
       
     case PE_ArrowRight:
-      // Exact 11x11 geometry as requested by user (6px legs, horizontal offset)
+      // Exact 11x11 geometry (6px legs, horizontal offset)
       // Tip at center, legs extend 5px out
       a.setPoint(0, cx - 5, cy - 5);
       a.setPoint(1, cx,     cy);     // Tip 1
@@ -1781,7 +1718,7 @@ void Q4Win10Style::drawPrimitive(PrimitiveElement pe, TQPainter *p,
         p->drawPolyline(a);
         
         // Draw 2nd instance (Double Stroke - Vertical)
-        // ONLY for Up/Down arrows to increase boldness as requested (User: "Haut/Bas sont parfait").
+        // ONLY for Up/Down arrows to increase boldness
         if (pe == PE_ArrowUp || pe == PE_ArrowDown) {
             a.translate(0, 1);
             p->drawPolyline(a);
@@ -2398,6 +2335,119 @@ void Q4Win10Style::drawComplexControl(ComplexControl control, TQPainter *p,
   const bool enabled = (flags & Style_Enabled);
 
   switch (control) {
+    // LISTVIEW
+    // --------
+  case CC_ListView: {
+    // Custom implementation to remove branch lines (dotted lines)
+    // Based on TQWindowsStyle/QtCurve logic but without drawing the lines.
+
+    // Paint the icon and text (background/selection).
+    if ( controls & SC_ListView )
+        TDEStyle::drawComplexControl( control, p, ceData, elementFlags, r, cg, flags, controls, active, opt, widget );
+
+    // If we have a branch or are expanded...
+    if ( controls & (SC_ListViewBranch | SC_ListViewExpand) )
+    {
+        // If no list view item was supplied, break
+        if (opt.isDefault())
+            break;
+
+        TQListViewItem *item  = opt.listViewItem();
+        TQListViewItem *child = item->firstChild();
+
+        int y = r.y();
+        
+        // Skip the stuff above the exposed rectangle
+        // Helper to find next visible sibling since we don't have the static helper here
+        while ( child && y + child->height() <= 0 ) {
+            y += child->totalHeight();
+            child = child->nextSibling();
+            while (child && !child->isVisible()) child = child->nextSibling();
+        }
+
+        int bx = r.width() / 2;
+
+        TQListView* v = item->listView();
+        // Calculate line height similar to QWindowsStyle
+        int lh = 0;
+        if ( !item->multiLinesEnabled() )
+            lh = child ? child->height() : 0; // Use child height if available
+        else
+            lh = p->fontMetrics().height() + 2 * v->itemMargin();
+        
+        lh = TQMAX( lh, TQApplication::globalStrut().height() );
+        if ( lh % 2 > 0 ) lh++;
+
+        // Draw ONLY the expand/close boxes...
+        while ( child && y < r.height() )
+        {
+            int linebot = y + lh/2;
+            
+            // Recalculate lh for this child if needed (variable height)
+            if ( !item->multiLinesEnabled() ) {
+                 lh = child->height();
+                 lh = TQMAX( lh, TQApplication::globalStrut().height() );
+                 if ( lh % 2 > 0 ) lh++;
+                 linebot = y + lh/2;
+            }
+
+            if ( (child->isExpandable() || child->childCount()) && (child->height() > 0) )
+            {
+                // Draw the expand/collapse arrow (Right / Down)
+         
+                int cx = bx;         // Center X
+                int cy = linebot;    // Center Y
+                
+                p->setPen( cg.text() ); // Use text color for arrows
+                p->setBrush( Qt::NoBrush ); // Arrows are lines in this style (v-shape)
+
+                if ( !child->isOpen() ) {
+                    // Collapsed -> Right Arrow (Double Stroke)
+                    int tipx = cx;
+                    int tipy = cy;
+                    int legx = cx - 4;
+                    int legy1 = cy - 4;
+                    int legy2 = cy + 4;
+                    
+                    // Stroke 1
+                    p->drawLine(legx, legy1, tipx, tipy);
+                    p->drawLine(tipx, tipy, legx, legy2);
+                    
+                    // Stroke 2 (Offset 1px Left)
+                    p->drawLine(legx - 1, legy1, tipx - 1, tipy);
+                    // Note: Tip for second stroke is also moved left.
+                    p->drawLine(tipx - 1, tipy, legx - 1, legy2);
+                    
+                } else {
+                    // Expanded -> Down Arrow (Rotated 90deg -> Checkmark style pointed down)
+                    // Tip at (cx, cy). Legs at (cx-4, cy-4) and (cx+4, cy-4).
+                    
+                    int tipx = cx;
+                    int tipy = cy;
+                    int legx1 = cx - 4;
+                    int legx2 = cx + 4;
+                    int legy = cy - 4;
+                    
+                    // Stroke 1
+                    p->drawLine(legx1, legy, tipx, tipy);
+                    p->drawLine(tipx, tipy, legx2, legy);
+                    
+                    // Stroke 2 (Offset 1px Up)
+                    p->drawLine(legx1, legy - 1, tipx, tipy - 1);
+                    p->drawLine(tipx, tipy - 1, legx2, legy - 1);
+                }
+                
+                // CRITICAL: WE DO NOT DRAW THE LINES HERE (dotlines)
+            }
+            
+            y += child->totalHeight();
+            child = child->nextSibling();
+            while (child && !child->isVisible()) child = child->nextSibling();
+        }
+    }
+    break;
+  }
+
     // COMBOBOX
     // --------
   case CC_ComboBox: {

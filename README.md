@@ -13,9 +13,16 @@ Version 2.0 - Optimized and Refined ;-)
     *   Cleaned up visual noise (removed gradients, shadows, and rounded corners on windows).
 
 *   **Optimized Performance:**
-    *   **Light Binary**: ~135KB (style) and ~37KB (config).
+    *   **Light Binary**: ~110KB (style) and ~37KB (config).
     *   Removed unused code: Animations and legacy bitmaps.
     *   Compiled with `-O2 -flto -ffast-math -fmerge-all-constants`.
+
+## Version 2.1 - Visual Refinements
+*   **Tree View Customization**:
+    *   Removed dotted branch lines for a cleaner look.
+    *   Replaced `[+]`/`[-]` with sleek **Double Stroke** arrows matching the menus (Right Arrow for collapsed, rotated Down Arrow for expanded).
+*   **Scrollbar Improvements**:
+    *   Darkened slider color (Normal `dark(105)`, Hover `dark(115)`, Active `dark(125)`) for better visibility and contrast.
 
 ## Context-Aware Window Borders (X11 Integration)
 
@@ -58,39 +65,21 @@ This style is a plugin for TDE and relies on **TDEBase** headers and build syste
 **Requirements:**
 *   Trinity Desktop Environment source tree (`tdebase`).
 *   TQt3/TDE development headers.
+*   CMake.
 
 ### Standalone Compilation (Recommended)
 
 This style can be built independently of the full `tdebase` tree.
 
-1.  Install development headers (example for Debian/Ubuntu with Trinity packages):
-    ```bash
-    sudo apt-get install tdelibs14-trinity-dev tdebase-trinity-dev
-    ```
-
-2.  Check your Trinity prefix (commonly `/opt/trinity`):
-    ```bash
-    tde-config --prefix
-    ```
-    If your prefix is not `/opt/trinity`, edit `TDE_PREFIX` at the top of `Makefile` accordingly.
-
-3.  Navigate to the `Q4WIN10` directory.
-4.  Build and install:
+1.  Navigate to the `q4win10` directory.
+2.  Build and install:
     ```bash
     make
     sudo make install
+    tdebuildsyscoca
     ```
 
-5.  Rebuild the TDE service cache:
-    ```bash
-    /opt/trinity/bin/tdebuildsycoca
-    ```
-    If `/opt/trinity/bin` is already in your `PATH`, you can simply run:
-    ```bash
-    tdebuildsycoca
-    ```
-
-6.  Restart Trinity or change style in TDE Control Center.
+3.  Restart Trinity or change style in TDE Control Center.
 
 ### Integrated Compilation (TDE Core)
 1.  Place the `q4win10` directory into `tdebase/kstyles/`.
