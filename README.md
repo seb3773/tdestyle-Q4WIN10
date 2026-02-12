@@ -100,6 +100,9 @@ This style can be built independently of the full `tdebase` tree.
 
 6.  Restart Trinity or change style in TDE Control Center.
 
+![win10style](screenshots/win10_tdestyle_screen1.png) ![win10style](screenshots/win10_tdestyle_screen2.png)
+![win10style](screenshots/win10_tdestyle_screen3.png)
+
 ### Integrated Compilation (TDE Core)
 1.  Place the `q4win10` directory into `tdebase/kstyles/`.
 2.  Edit `tdebase/kstyles/CMakeLists.txt` to include: `add_subdirectory( q4win10 )`.
