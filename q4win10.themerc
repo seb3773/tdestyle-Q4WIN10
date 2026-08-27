@@ -1,0 +1,7 @@
+[Misc]
+Name=Q4WIN10
+Comment=Windows 10 inspired style
+ConfigPage=tdestyle_q4win10_config
+
+[KDE]
+WidgetStyle=q4win10
