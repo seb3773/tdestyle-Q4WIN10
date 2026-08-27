@@ -16,25 +16,19 @@ Compatible across **all Trinity Desktop R14.1.x versions** (R14.1.0 to R14.1.6+)
 * **Windows 10 Mode (Default)**:
   * Crisp flat design with sharp borders and clean solid color fills.
   * Vector checkmarks and radio dots adapting seamlessly to light and dark color schemes.
-  * Clean toolbar buttons, tabs, splitters, comboboxes, and listviews without legacy 3D relief or dotted lines.
 * **Windows 11 Mode**:
   * Curved tabs (6px radius) with surgical clipping.
   * Rounded controls (comboboxes, text edits, spin widgets, popup menus, scrollbar sliders).
   * Rounded checkboxes and custom radio indicators.
-* **Dark Mode Feature**:
-  * High-contrast text and indicator adjustments tailored for dark desktop themes.
-  * Enhanced button and menu item contrast with adjusted disabled states.
-* **Context-Aware Menubar Integration**:
-  * Seamless X11 Atom integration (`_Q4WIN10_MENUBAR_HEIGHT`) with static caching communicating directly with the window decoration.
-* **Interactive Configuration Module**:
-  * Dedicated graphical configuration dialog in Trinity Control Center (**Appearance & Themes → Style → Configure**).
-  * Embedded high-resolution branding logo (smoothed at runtime) and dynamic version info.
-  * Live toggles for Dark Mode and Windows 11 Mode persisted in user-scoped `~/.trinity/share/config/q4win10stylerc`.
+* **Dark Mode**:
+  * Native dark mode support for dark desktop themes.
+* **Menubar Integration**:
+  * Seamless X11 Atom integration (`_Q4WIN10_MENUBAR_HEIGHT`) matching the window decoration.
 * **High-Performance & Low-Footprint Engine**:
   * Zero dynamic heap cache overhead (pure flat vector drawing).
-  * Fast bitwise arithmetic (`div255`) for alpha blending (no hardware `idiv` instructions).
-  * Zero runtime RTTI traversals in paint loops.
-  * Aggressive compiler optimizations (`-O2`, `-flto`, `-fno-exceptions`, `-fvisibility=hidden`):
+  * Fast bitwise arithmetic (`div255`) for alpha blending.
+  * Zero runtime RTTI traversals in paint loops (`::tqt_cast` & direct device checks).
+  * Compiled with aggressive optimizations (`-O2`, `-flto`, `-fno-exceptions`, `-fvisibility=hidden`):
     * **Style Plugin (`q4win10.so`)**: **~136 KB**
     * **Config Plugin (`tdestyle_q4win10_config.so`)**: **~33 KB**
     * **Debian Package (`.deb`)**: **~43 KB**
@@ -53,30 +47,16 @@ sudo apt update
 sudo apt install tde-win-style-q4win10
 ```
 
-### Method 2: Q4OS Graphical Installer (`.qsi`) — 1-Click Setup
-Download the standalone `.qsi` installer:
-* **Double-click** `setup_tde-win-style-q4win10_2.0.1.qsi` in Konqueror / file manager, or run:
+### Method 2: Q4OS Graphical Installer (`.qsi`)
+Download or run the standalone `.qsi` installer:
 ```bash
 ./setup_tde-win-style-q4win10_2.0.1.qsi
 ```
 
-### Method 3: Debian Package (`.deb`) — Direct Installation
-Download and install the standalone package via `dpkg`:
+### Method 3: Debian Package (`.deb`)
 ```bash
 sudo dpkg -i tde-win-style-q4win10_2.0.1_amd64.deb
 ```
-
----
-
-## ⚙️ Activation
-
-Once installed, update the Trinity Sycoca cache:
-```bash
-tdebuildsycoca
-```
-Open **Trinity Control Center → Appearance & Themes → Style**, select **Q4WIN10**, and click **Apply**.
-
-To customize options (Dark Mode, Windows 11 Mode), click the **Configure...** button on the Style page.
 
 ---
 
