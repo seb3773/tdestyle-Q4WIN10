@@ -1,0 +1,23 @@
+Package: tde-win-style-q4win10
+Version: 2.0.1
+Architecture: amd64
+Maintainer: seb3773 <https://github.com/seb3773>
+Installed-Size: 232
+Depends: libtqt3-mt, tdelibs14-trinity
+Conflicts: tdestyle-q4win10, tde-style-q4win10
+Replaces: tdestyle-q4win10, tde-style-q4win10
+Provides: tde-win-style-q4win10
+Filename: pool/main/t/tde-win-style-q4win10/tde-win-style-q4win10_2.0.1_amd64.deb
+Size: 43880
+MD5sum: 023ae5405cfa0a0afcfeb717350c3ee8
+SHA1: edacf034ea68e530633c792bed68360ffee7b6ac
+SHA256: f9e929030a9daa8ce8999417e3b28fade8da571163fb0ea5542904c090c40a36
+Section: x11
+Priority: optional
+Description: Q4WIN10 Widget Style for Trinity Desktop
+ Modern flat Windows 10 & 11 inspired widget style plugin for TDE.
+ Features native Windows 11 mode, dark mode support, and seamless X11
+ menubar integration.
+ Fully decoupled standalone build for all Trinity Desktop R14.1.x versions.
+ Author: seb3773 (https://github.com/seb3773)
+
