@@ -24,7 +24,7 @@ Compatible across **all Trinity Desktop R14.1.x versions** (R14.1.0 to R14.1.6+)
   * Native dark mode support for dark desktop themes.
 * **Menubar Integration**:
   * Seamless X11 Atom integration (`_Q4WIN10_MENUBAR_HEIGHT`) matching the window decoration.
-* **High-Performance & Low-Footprint Engine**:
+* **High-Performance Engine**:
   * Zero dynamic heap cache overhead (pure flat vector drawing).
   * Fast bitwise arithmetic (`div255`) for alpha blending.
   * Zero runtime RTTI traversals in paint loops (`::tqt_cast` & direct device checks).
@@ -57,6 +57,16 @@ Download or run the standalone `.qsi` installer:
 ```bash
 sudo dpkg -i tde-win-style-q4win10_2.0.1_amd64.deb
 ```
+
+---
+
+## 🖼️ Screenshots
+
+![Windows 10 Style Mode](screenshots/win10_tdestyle_screen1.png)
+
+![Windows 11 Rounded Tabs & Controls](screenshots/win11_tdestyle_screen1.png)
+
+![Windows 11 Overview](screenshots/win11_tdestyle_screen2.png)
 
 ---
 

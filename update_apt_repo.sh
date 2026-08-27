@@ -109,7 +109,6 @@ fi
 LATEST_DEB_NAME="$(basename "${DEB_FILES[0]}")"
 LATEST_QSI_NAME="$(basename "${QSI_FILES[0]:-setup_tde-win-style-q4win10_2.0.1.qsi}")"
 PKG_VERSION="$(dpkg-deb -f "${DEB_FILES[0]}" Version 2>/dev/null || echo "2.0.1")"
-TIMESTAMP="$(date -u +'%Y-%m-%d %H:%M UTC')"
 
 echo "Generating modern index.html web portal..."
 cat << 'HTML_EOF' > "$PAGES_DIR/index.html"
@@ -391,10 +390,10 @@ cat << 'HTML_EOF' > "$PAGES_DIR/index.html"
       color: var(--text-muted);
     }
 
-    /* Screenshots */
+    /* Screenshots Grid (Max 4x4) */
     .screenshots-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       margin-top: 16px;
     }
@@ -405,7 +404,11 @@ cat << 'HTML_EOF' > "$PAGES_DIR/index.html"
       border: 1px solid var(--card-border);
       background: #000;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      aspect-ratio: 16 / 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .screenshot-thumb:hover {
@@ -415,7 +418,8 @@ cat << 'HTML_EOF' > "$PAGES_DIR/index.html"
 
     .screenshot-thumb img {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
       display: block;
     }
 
@@ -561,9 +565,6 @@ sudo apt install tde-win-style-q4win10</pre>
           </a>
         </div>
       </div>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 16px;">
-        * Note: Once installed, open <strong>Trinity Control Center &rarr; Appearance &amp; Themes &rarr; Style</strong> and select <strong>Q4WIN10</strong>.
-      </p>
     </div>
 
     <!-- Key Features -->
@@ -581,21 +582,9 @@ sudo apt install tde-win-style-q4win10</pre>
         </div>
 
         <div class="feature-item">
-          <span class="feature-icon">🌙</span>
-          <div class="feature-title">Native Dark Mode</div>
-          <div class="feature-text">High-contrast text and indicator adjustments tailored for dark desktop themes.</div>
-        </div>
-
-        <div class="feature-item">
           <span class="feature-icon">🎨</span>
           <div class="feature-title">Seamless Menubar Matching</div>
-          <div class="feature-text">Seamless X11 Atom integration (<code>_Q4WIN10_MENUBAR_HEIGHT</code>) with static caching for window decorations.</div>
-        </div>
-
-        <div class="feature-item">
-          <span class="feature-icon">⚙️</span>
-          <div class="feature-title">Control Center Module</div>
-          <div class="feature-text">Interactive style configuration in Trinity Control Center with embedded logo and live setting toggles.</div>
+          <div class="feature-text">Seamless X11 Atom integration (<code>_Q4WIN10_MENUBAR_HEIGHT</code>) with static caching matching the window decoration.</div>
         </div>
 
         <div class="feature-item">
@@ -606,7 +595,7 @@ sudo apt install tde-win-style-q4win10</pre>
 
         <div class="feature-item">
           <span class="feature-icon">🚀</span>
-          <div class="feature-title">Universal Compatibility</div>
+          <div class="feature-title">TDE R14.1.x</div>
           <div class="feature-text">Single standalone binary fully compatible across all Trinity Desktop R14.1.x releases.</div>
         </div>
       </div>
@@ -616,11 +605,23 @@ sudo apt install tde-win-style-q4win10</pre>
     <div class="card">
       <h2>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        Preview
+        Screenshots Preview
       </h2>
       <div class="screenshots-grid">
-        <div class="screenshot-thumb" onclick="openModal('screenshots/ALL.png')">
-          <img src="screenshots/ALL.png" alt="Q4WIN10 Widget Style Overview">
+        <div class="screenshot-thumb" onclick="openModal('screenshots/win10_tdestyle_screen1.png')">
+          <img src="screenshots/win10_tdestyle_screen1.png" alt="Q4WIN10 Widget Style - Windows 10 Mode Light Theme">
+        </div>
+        <div class="screenshot-thumb" onclick="openModal('screenshots/win10_tdestyle_screen2.png')">
+          <img src="screenshots/win10_tdestyle_screen2.png" alt="Q4WIN10 Widget Style - Controls & Dialogs">
+        </div>
+        <div class="screenshot-thumb" onclick="openModal('screenshots/win10_tdestyle_screen3.png')">
+          <img src="screenshots/win10_tdestyle_screen3.png" alt="Q4WIN10 Widget Style - Desktop Overview">
+        </div>
+        <div class="screenshot-thumb" onclick="openModal('screenshots/win11_tdestyle_screen1.png')">
+          <img src="screenshots/win11_tdestyle_screen1.png" alt="Q4WIN10 Widget Style - Windows 11 Rounded Tabs & Controls">
+        </div>
+        <div class="screenshot-thumb" onclick="openModal('screenshots/win11_tdestyle_screen2.png')">
+          <img src="screenshots/win11_tdestyle_screen2.png" alt="Q4WIN10 Widget Style - Windows 11 Rounded Mode">
         </div>
       </div>
     </div>
