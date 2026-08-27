@@ -499,7 +499,7 @@ cat << HTML_EOF > "$PAGES_DIR/index.html"
         <span class="badge badge-green">Universal R14.1.x</span>
         <span class="badge badge-purple">x86_64</span>
       </div>
-      <h1>Q4WIN10 <span class="version-pill">v${PKG_VERSION}</span></h1>
+      <h1>tde-win-style-Q4WIN10 <span class="version-pill">v${PKG_VERSION}</span></h1>
       <p class="lead">Lightweight, modern flat Windows 10 &amp; 11 inspired widget style plugin for Trinity Desktop Environment (TDE / TQt3).</p>
     </header>
 
