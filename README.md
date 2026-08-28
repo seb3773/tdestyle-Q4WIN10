@@ -1,6 +1,6 @@
 # Q4WIN10 Widget Style for Trinity Desktop (TDE)
 
-[![Release](https://img.shields.io/badge/Release-v2.0.1-0078d7.svg)](https://github.com/seb3773/tdestyle-Q4WIN10/releases)
+[![Release](https://img.shields.io/badge/Release-v2.0.2-0078d7.svg)](https://github.com/seb3773/tdestyle-Q4WIN10/releases)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 [![Target: TDE R14.1.x](https://img.shields.io/badge/Trinity-R14.1.x_Universal-10b981.svg)](https://www.trinitydesktop.org/)
 [![APT Repository](https://img.shields.io/badge/APT_Repo-GitHub_Pages-38bdf8.svg)](https://seb3773.github.io/tdestyle-Q4WIN10/)
@@ -50,12 +50,12 @@ sudo apt install tde-win-style-q4win10
 ### Method 2: Q4OS Graphical Installer (`.qsi`)
 Download or run the standalone `.qsi` installer:
 ```bash
-./setup_tde-win-style-q4win10_2.0.1.qsi
+./setup_tde-win-style-q4win10_2.0.2.qsi
 ```
 
 ### Method 3: Debian Package (`.deb`)
 ```bash
-sudo dpkg -i tde-win-style-q4win10_2.0.1_amd64.deb
+sudo dpkg -i tde-win-style-q4win10_2.0.2_amd64.deb
 ```
 
 ---

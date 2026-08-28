@@ -8,7 +8,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_NAME="tde-win-style-q4win10"
-PACKAGE_VERSION="2.0.1"
+PACKAGE_VERSION="2.0.2"
 ARCH="$(dpkg --print-architecture 2>/dev/null || echo 'amd64')"
 BUILD_DIR="${SCRIPT_DIR}/package_build"
 BUILD_TIMESTAMP="$(date +'%Y%m%d.%H%M%S')"

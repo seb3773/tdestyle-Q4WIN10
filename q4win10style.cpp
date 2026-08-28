@@ -633,402 +633,110 @@ void Q4Win10Style::renderTab(TQPainter *p, const TQRect &r,
   const bool isLast = (pos == Last);
   const bool isSingle = (pos == Single);
 
-  if (m_win11Mode) {
-    // Win11: simplified rounded tabs
-    // Only top corners rounded for top tabs, only bottom corners for bottom tabs
-    const int radius = 6; // pixels
+  // 1. Colors
+  TQColor fillColor;
+  TQColor borderColor;
 
-    TQColor fillColor;
-    TQColor borderColor;
+  if (selected) {
+    // Active tab: standard background color (blends seamlessly with the panel)
+    fillColor = g.background();
+    borderColor = m_darkMode ? g.background().light(145) : g.background().dark(130);
+  } else if (mouseOver) {
+    fillColor = getColor(g, MouseOverHighlight);
+    borderColor = g.background().dark(120);
+  } else {
+    // Inactive tab: subtle darker shade in light mode, lighter in dark mode
+    fillColor = m_darkMode ? g.background().light(130) : g.background().dark(110);
+    borderColor = g.background().dark(120);
+  }
 
-    if (selected) {
-      // Active tab: standard background color (blends with the panel)
-      fillColor = g.background();
-      borderColor = m_darkMode ? g.background().light(145) : g.background().dark(130);
-    } else if (mouseOver) {
-      fillColor = getColor(g, MouseOverHighlight);
-      borderColor = g.background().dark(120);
+  // 2. Geometry: Inactive tabs are 2px shorter, pushed away from the panel
+  TQRect drawRect = r;
+  if (!selected) {
+    if (!bottom) {
+      // Top tabs: panel is at bottom, so push down the top by 2px (gap at top)
+      drawRect = TQRect(r.left(), r.top() + 2, r.width(), r.height() - 2);
     } else {
-      // Inactive tab: darker in light mode, lighter in dark mode
-      fillColor = m_darkMode ? g.background().light(130) : g.background().dark(110);
-      borderColor = g.background().dark(120);
+      // Bottom tabs: panel is at top, so pull up the bottom by 2px (gap at bottom)
+      drawRect = TQRect(r.left(), r.top(), r.width(), r.height() - 2);
     }
+  }
 
-    // Inactive tabs are 2px shorter, pushed away from the panel
-    TQRect drawRect = r;
-    if (!selected) {
-      if (!bottom) {
-        // Top tabs: panel is at bottom, so push down the top by 2px (gap at top)
-        drawRect = TQRect(r.left(), r.top() + 2, r.width(), r.height() - 2);
-      } else {
-        // Bottom tabs: panel is at top, so pull up the bottom by 2px (gap at bottom)
-        drawRect = TQRect(r.left(), r.top(), r.width(), r.height() - 2);
-      }
-    }
+  if (m_win11Mode) {
+    // Clear parent cell to prevent leftover rendering when tabs switch states/heights
+    p->fillRect(r, g.background());
 
-    // Compute rounded percentages for the drawRect
+    // --- Windows 11 Mode: 6px rounded top/bottom corners ---
+    const int radius = 6;
     int xRound = (drawRect.width()  > 0) ? (200 * radius / drawRect.width())  : 0;
     int yRound = (drawRect.height() > 0) ? (200 * radius / drawRect.height()) : 0;
 
-    // Draw filled rounded rect
+    // Fill rounded rect
     p->setPen(TQt::NoPen);
     p->setBrush(fillColor);
     p->drawRoundRect(drawRect, xRound, yRound);
 
-    // Square off the unwanted rounded corners (bottom for top tabs, top for bottom tabs)
-    // This is efficient: just fill the corner areas with the background color
+    // Square off unwanted corners (bottom for top tabs, top for bottom tabs)
     if (!bottom) {
-      // Top tabs: square bottom corners
-      p->fillRect(drawRect.left(), drawRect.bottom() - radius, radius, radius, fillColor);
-      p->fillRect(drawRect.right() - radius, drawRect.bottom() - radius, radius + 1, radius, fillColor);
+      p->fillRect(drawRect.left(), drawRect.bottom() - radius + 1, radius, radius, fillColor);
+      p->fillRect(drawRect.right() - radius + 1, drawRect.bottom() - radius + 1, radius, radius, fillColor);
     } else {
-      // Bottom tabs: square top corners
       p->fillRect(drawRect.left(), drawRect.top(), radius, radius, fillColor);
-      p->fillRect(drawRect.right() - radius, drawRect.top(), radius + 1, radius, fillColor);
+      p->fillRect(drawRect.right() - radius + 1, drawRect.top(), radius, radius, fillColor);
     }
 
-    // Draw border with surgical clipping to ensure perfect square corners where requested
+    // Draw border with surgical clipping
     p->save();
     if (!bottom) {
-      // Top tabs: clip the bottom 'radius' pixels to avoid rounded bottom border
-      p->setClipRect(drawRect.x(), drawRect.y(), drawRect.width() + 1,
-                     drawRect.height() - radius);
+      p->setClipRect(drawRect.x(), drawRect.y(), drawRect.width(), drawRect.height() - radius + 1);
       p->setPen(borderColor);
       p->setBrush(TQt::NoBrush);
       p->drawRoundRect(drawRect, xRound, yRound);
       p->restore();
 
-      // Draw the missing straight parts for the bottom
       p->setPen(borderColor);
-      p->drawLine(drawRect.left(), drawRect.bottom() - radius, drawRect.left(),
-                  drawRect.bottom());
-      p->drawLine(drawRect.right(), drawRect.bottom() - radius, drawRect.right(),
-                  drawRect.bottom());
-      // Inactive tab: close the bottom border
+      p->drawLine(drawRect.left(), drawRect.bottom() - radius + 1, drawRect.left(), drawRect.bottom());
+      p->drawLine(drawRect.right(), drawRect.bottom() - radius + 1, drawRect.right(), drawRect.bottom());
       if (!selected) {
-        p->drawLine(drawRect.left(), drawRect.bottom(), drawRect.right(),
-                    drawRect.bottom());
+        p->drawLine(drawRect.left(), drawRect.bottom(), drawRect.right(), drawRect.bottom());
       }
     } else {
-      // Bottom tabs: clip the top 'radius' pixels
-      p->setClipRect(drawRect.x(), drawRect.y() + radius, drawRect.width() + 1,
-                     drawRect.height() - radius);
+      p->setClipRect(drawRect.x(), drawRect.y() + radius - 1, drawRect.width(), drawRect.height() - radius + 1);
       p->setPen(borderColor);
       p->setBrush(TQt::NoBrush);
       p->drawRoundRect(drawRect, xRound, yRound);
       p->restore();
 
-      // Draw the missing straight parts for the top
       p->setPen(borderColor);
-      p->drawLine(drawRect.left(), drawRect.top(), drawRect.left(),
-                  drawRect.top() + radius);
-      p->drawLine(drawRect.right(), drawRect.top(), drawRect.right(),
-                  drawRect.top() + radius);
-      // Inactive tab: close the top border
+      p->drawLine(drawRect.left(), drawRect.top(), drawRect.left(), drawRect.top() + radius - 1);
+      p->drawLine(drawRect.right(), drawRect.top(), drawRect.right(), drawRect.top() + radius - 1);
       if (!selected) {
-        p->drawLine(drawRect.left(), drawRect.top(), drawRect.right(),
-                    drawRect.top());
+        p->drawLine(drawRect.left(), drawRect.top(), drawRect.right(), drawRect.top());
       }
     }
-
-    return;
-  }
-
-  const TQColor panelContourColor = panelContourColor;
-  const TQColor buttonContourColor = getColor(g, ButtonContour);
-  const TQColor blendPanel50 = alphaBlendColors(g.background(), panelContourColor, 50);
-  const TQColor blendPanel150 = alphaBlendColors(g.background(), panelContourColor, 150);
-  const TQColor blendButton50 = alphaBlendColors(g.background(), buttonContourColor, 50);
-  const TQColor blendCornerFirst = alphaBlendColors(blendButton50, panelContourColor, 150);
-
-  if (selected) {
-    // is selected
-
-    // the top part of the tab which is nearly the same for all positions
-    TQRect Rc; // contour
-    if (!bottom) {
-      if (isFirst && !cornerWidget && !reverseLayout) {
-        Rc = TQRect(r.x(), r.y(), r.width() - 1, r.height() - 3);
-      } else if (isFirst && !cornerWidget && reverseLayout) {
-        Rc = TQRect(r.x() + 1, r.y(), r.width() - 1, r.height() - 3);
-      } else {
-        Rc = TQRect(r.x() + 1, r.y(), r.width() - 2, r.height() - 3);
-      }
-    } else {
-      if (isFirst && !cornerWidget && !reverseLayout) {
-        Rc = TQRect(r.x(), r.y() + 3, r.width() - 1, r.height() - 3);
-      } else if (isFirst && !cornerWidget && reverseLayout) {
-        Rc = TQRect(r.x() + 1, r.y() + 3, r.width() - 1, r.height() - 3);
-      } else {
-        Rc = TQRect(r.x() + 1, r.y() + 3, r.width() - 2, r.height() - 3);
-      }
-    }
-    const TQRect Rs(Rc.x() + 1, bottom ? Rc.y() : Rc.y() + 1, Rc.width() - 2,
-                    Rc.height() - 1); // the resulting surface
-    // the area where the fake border shoudl appear
-    const TQRect Rb(r.x(), bottom ? r.top() : Rc.bottom() + 1, r.width(),
-                    r.height() - Rc.height());
-
-    uint contourFlags = Draw_Left | Draw_Right;
-    if (!bottom) {
-      contourFlags |= Draw_Top | Round_UpperLeft | Round_UpperRight;
-    } else {
-      contourFlags |= Draw_Bottom | Round_BottomLeft | Round_BottomRight;
-    }
-    renderContour(p, Rc, g.background(), panelContourColor,
-                  contourFlags);
-
-
-
-    // some "position specific" paintings...
-    // draw parts of the inactive tabs around...
-    if (!isSingle) {
-      p->setPen(
-          blendButton50);
-      if ((!isFirst && !reverseLayout) || (!isLast && reverseLayout)) {
-        p->drawPoint(r.left(),
-                     bottom ? (triangular ? r.bottom() - 2 : r.bottom() - 3)
-                            : (triangular ? r.top() + 2 : r.top() + 3));
-        renderSurface(p,
-                      TQRect(r.left(),
-                             bottom ? r.top() + 3
-                                    : (triangular ? r.top() + 3 : r.top() + 4),
-                             1, (triangular ? r.height() - 6 : r.height() - 7)),
-                      g.background(), g.button(),
-                      getColor(g, MouseOverHighlight), _contrast,
-                      Draw_Top | Draw_Bottom | Is_Horizontal);
-      }
-      if ((!isLast && !reverseLayout) || (!isFirst && reverseLayout)) {
-        p->drawPoint(r.right(),
-                     bottom ? (triangular ? r.bottom() - 2 : r.bottom() - 3)
-                            : (triangular ? r.top() + 2 : r.top() + 3));
-        renderSurface(p,
-                      TQRect(r.right(),
-                             bottom ? r.top() + 3
-                                    : (triangular ? r.top() + 3 : r.top() + 4),
-                             1, (triangular ? r.height() - 6 : r.height() - 7)),
-                      g.background(), g.button(),
-                      getColor(g, MouseOverHighlight), _contrast,
-                      Draw_Top | Draw_Bottom | Is_Horizontal);
-      }
-    }
-    // left connection from the panel border to the tab. :)
-    if (isFirst && !reverseLayout && !cornerWidget) {
-      p->setPen(
-          blendPanel50);
-      p->drawLine(Rb.x(), Rb.y(), Rb.x(), Rb.bottom());
-      p->setPen(getColor(g, PanelLight));
-      p->drawLine(Rb.x() + 1, Rb.y(), Rb.x() + 1, Rb.bottom());
-    } else if (isFirst && reverseLayout && !cornerWidget) {
-      p->setPen(
-          blendPanel50);
-      p->drawLine(Rb.right(), Rb.y(), Rb.right(), Rb.bottom());
-      p->setPen(getColor(g, PanelDark));
-      p->drawLine(Rb.right() - 1, Rb.y(), Rb.right() - 1, Rb.bottom());
-    }
-    // rounded connections to the panel...
-    if (!bottom) {
-      // left
-      if ((!isFirst && !reverseLayout) || (reverseLayout) ||
-          (isFirst && !reverseLayout && cornerWidget)) {
-        p->setPen(
-            blendPanel50);
-        p->drawPoint(Rb.x(), Rb.y());
-        p->setPen(
-            blendPanel150);
-        p->drawPoint(Rb.x(), Rb.y() + 1);
-        p->drawPoint(Rb.x() + 1, Rb.y());
-      }
-      // right
-      if ((!reverseLayout) || (!isFirst && reverseLayout) ||
-          (isFirst && reverseLayout && cornerWidget)) {
-        p->setPen(
-            blendPanel50);
-        p->drawPoint(Rb.right(), Rb.y());
-        p->setPen(
-            blendPanel150);
-        p->drawPoint(Rb.right(), Rb.y() + 1);
-        p->drawPoint(Rb.right() - 1, Rb.y());
-      }
-    } else {
-      // left
-      if ((!isFirst && !reverseLayout) || (reverseLayout) ||
-          (isFirst && !reverseLayout && cornerWidget)) {
-        p->setPen(
-            blendPanel50);
-        p->drawPoint(Rb.x(), Rb.bottom());
-        p->setPen(
-            blendPanel150);
-        p->drawPoint(Rb.x(), Rb.bottom() - 1);
-        p->drawPoint(Rb.x() + 1, Rb.bottom());
-      }
-      // right
-      if ((!reverseLayout) || (!isFirst && reverseLayout) ||
-          (isFirst && reverseLayout && cornerWidget)) {
-        p->setPen(
-            blendPanel50);
-        p->drawPoint(Rb.right(), Rb.bottom());
-        p->setPen(
-            blendPanel150);
-        p->drawPoint(Rb.right(), Rb.bottom() - 1);
-        p->drawPoint(Rb.right() - 1, Rb.bottom());
-      }
-    }
-
   } else {
-    // inactive tabs
+    // --- Windows 10 Mode: Sharp, flat square tabs ---
+    // Fill flat rectangle
+    p->fillRect(drawRect, fillColor);
 
-    // the top part of the tab which is nearly the same for all positions
-    TQRect Rc; // contour
-    if (isFirst && reverseLayout) {
-      Rc =
-          TQRect(r.x() + 1,
-                 (bottom ? r.y() + 2 : (triangular ? r.y() + 2 : r.y() + 3)),
-                 r.width() - 2, (triangular ? r.height() - 4 : r.height() - 5));
-    } else {
-      Rc =
-          TQRect(r.x() + 1,
-                 (bottom ? r.y() + 2 : (triangular ? r.y() + 2 : r.y() + 3)),
-                 r.width() - 1, (triangular ? r.height() - 4 : r.height() - 5));
-    }
-    TQRect Rs; // the resulting surface
-    if ((isFirst && !reverseLayout) || (isLast && reverseLayout)) {
-      Rs = TQRect(Rc.x() + 1, bottom ? Rc.y() : Rc.y() + 1, Rc.width() - 2,
-                  Rc.height() - 1);
-    } else {
-      Rs = TQRect(Rc.x(), bottom ? Rc.y() : Rc.y() + 1, Rc.width() - 1,
-                  Rc.height() - 1);
-    }
-    // the area where the fake border shoudl appear
-    const TQRect Rb(r.x(), bottom ? r.y() : Rc.bottom() + 1, r.width(), 2);
-
-    uint contourFlags;
+    p->setPen(borderColor);
     if (!bottom) {
-      if ((isFirst && !reverseLayout) || (isLast && reverseLayout)) {
-        contourFlags = Draw_Left | Draw_Right | Draw_Top | Round_UpperLeft;
-      } else if ((isLast && !reverseLayout) || (isFirst && reverseLayout)) {
-        contourFlags = Draw_Right | Draw_Top | Round_UpperRight;
-      } else {
-        contourFlags = Draw_Right | Draw_Top;
+      // Top tabs: draw top, left, right borders
+      p->drawLine(drawRect.left(), drawRect.top(), drawRect.right(), drawRect.top());
+      p->drawLine(drawRect.left(), drawRect.top(), drawRect.left(), drawRect.bottom());
+      p->drawLine(drawRect.right(), drawRect.top(), drawRect.right(), drawRect.bottom());
+      // Inactive tab: close bottom border; Active tab: leave open to merge seamlessly with panel
+      if (!selected) {
+        p->drawLine(drawRect.left(), drawRect.bottom(), drawRect.right(), drawRect.bottom());
       }
     } else {
-      if ((isFirst && !reverseLayout) || (isLast && reverseLayout)) {
-        contourFlags = Draw_Left | Draw_Right | Draw_Bottom | Round_BottomLeft;
-      } else if ((isLast && !reverseLayout) || (isFirst && reverseLayout)) {
-        contourFlags = Draw_Right | Draw_Bottom | Round_BottomRight;
-      } else {
-        contourFlags = Draw_Right | Draw_Bottom;
-      }
-    }
-    renderContour(p, Rc, g.background(), g.background(),
-                  contourFlags);
-
-    uint surfaceFlags = Is_Horizontal;
-    /* --- BEGIN DISABLED HOVER ---
-    if (mouseOver) {
-      surfaceFlags |= (bottom ? Highlight_Bottom : Highlight_Top);
-      surfaceFlags |= Is_Highlight;
-    }
-    --- END DISABLED HOVER --- */
-    if ((isFirst && !reverseLayout) || (isLast && reverseLayout)) {
-      if (!bottom)
-        surfaceFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_UpperLeft;
-      else
-        surfaceFlags |= Draw_Left | Draw_Top | Draw_Bottom | Round_BottomLeft;
-    } else if ((isLast && !reverseLayout) || (isFirst && reverseLayout)) {
-      if (!bottom)
-        surfaceFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_UpperRight;
-      else
-        surfaceFlags |= Draw_Right | Draw_Top | Draw_Bottom | Round_BottomRight;
-    } else {
-      surfaceFlags |= Draw_Top | Draw_Bottom;
-    }
-    renderSurface(p, Rs, g.background(),
-                  m_darkMode ? g.background().light(115) : g.background().dark(110),
-                  getColor(g, MouseOverHighlight), _contrast, surfaceFlags);
-
-    // some "position specific" paintings...
-    // fake parts of the panel border
-    if (!bottom) {
-      p->setPen(g.background());
-      p->drawLine(Rb.x(), Rb.y(),
-                  ((isLast && !reverseLayout) ||
-                   (isFirst && reverseLayout && cornerWidget))
-                      ? Rb.right()
-                      : Rb.right() - 1,
-                  Rb.y());
-      p->setPen(g.background());
-      p->drawLine(Rb.x(), Rb.y() + 1,
-                  ((isLast && !reverseLayout) ||
-                   (isFirst && reverseLayout && cornerWidget))
-                      ? Rb.right()
-                      : Rb.right() - 1,
-                  Rb.y() + 1);
-    } else {
-      p->setPen(g.background());
-      p->drawLine(Rb.x(), Rb.bottom(),
-                  ((isLast && !reverseLayout) ||
-                   (isFirst && reverseLayout && cornerWidget))
-                      ? Rb.right()
-                      : Rb.right() - 1,
-                  Rb.bottom());
-      p->setPen(g.background());
-      p->drawLine(Rb.x(), Rb.bottom() - 1,
-                  ((isLast && !reverseLayout) ||
-                   (isFirst && reverseLayout && cornerWidget))
-                      ? Rb.right()
-                      : Rb.right() - 1,
-                  Rb.bottom() - 1);
-    }
-    // fake the panel border edge for tabs which are aligned left-most
-    // (i.e. only if there is no widget in the corner of the tabwidget!)
-    if (isFirst && !reverseLayout && !cornerWidget)
-    // normal layout
-    {
-      if (!bottom) {
-        p->setPen(
-            blendPanel50);
-        p->drawPoint(Rb.x() + 1, Rb.y() + 1);
-        p->setPen(
-            blendPanel150);
-        p->drawPoint(Rb.x(), Rb.y() + 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.x(), Rb.y());
-        p->setPen(alphaBlendColors(
-            blendButton50,
-            panelContourColor, 150));
-        p->drawPoint(Rb.x() + 1, Rb.y());
-      } else {
-        p->setPen(g.background());
-        p->drawPoint(Rb.x() + 1, Rb.bottom() - 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.x(), Rb.bottom() - 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.x(), Rb.bottom());
-        p->setPen(g.background());
-        p->drawPoint(Rb.x() + 1, Rb.bottom());
-      }
-    } else if (isFirst && reverseLayout && !cornerWidget)
-    // reverse layout
-    {
-      if (!bottom) {
-        p->setPen(g.background());
-        p->drawPoint(Rb.right() - 1, Rb.y() + 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.right(), Rb.y() + 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.right(), Rb.y());
-        p->setPen(g.background());
-        p->drawPoint(Rb.right() - 1, Rb.y());
-      } else {
-        p->setPen(g.background());
-        p->drawPoint(Rb.right() - 1, Rb.bottom() - 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.right(), Rb.bottom() - 1);
-        p->setPen(g.background());
-        p->drawPoint(Rb.right(), Rb.bottom());
-        p->setPen(g.background());
-        p->drawPoint(Rb.right() - 1, Rb.bottom());
+      // Bottom tabs: draw bottom, left, right borders
+      p->drawLine(drawRect.left(), drawRect.bottom(), drawRect.right(), drawRect.bottom());
+      p->drawLine(drawRect.left(), drawRect.top(), drawRect.left(), drawRect.bottom());
+      p->drawLine(drawRect.right(), drawRect.top(), drawRect.right(), drawRect.bottom());
+      // Inactive tab: close top border; Active tab: leave open to merge seamlessly with panel
+      if (!selected) {
+        p->drawLine(drawRect.left(), drawRect.top(), drawRect.right(), drawRect.top());
       }
     }
   }
@@ -3309,6 +3017,8 @@ int Q4Win10Style::pixelMetric(PixelMetric m,
   }
 
   case PM_TabBarTabOverlap: {
+    if (m_win11Mode)
+      return 0;
     return 1;
   }
 
@@ -3557,6 +3267,14 @@ bool Q4Win10Style::objectEventHandler(const TQStyleControlElementData &ceData,
       if (lb->backgroundMode() == TQt::PaletteButton)
         lb->setBackgroundMode(TQt::PaletteBackground);
       removeObjectEventHandler(ceData, elementFlags, source, this);
+    }
+
+    if (TQTabBar *tabBar = ::tqt_cast<TQTabBar *>(obj)) {
+      if (ev->type() == TQEvent::MouseButtonPress ||
+          ev->type() == TQEvent::MouseButtonRelease ||
+          ev->type() == TQEvent::Wheel) {
+        tabBar->update();
+      }
     }
 
     if (m_win11Mode) {
