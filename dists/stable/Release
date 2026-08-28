@@ -1,24 +1,24 @@
 Architectures: amd64
 Codename: stable
 Components: main
-Date: Thu, 27 Aug 2026 23:39:14 +0000
+Date: Fri, 28 Aug 2026 08:56:18 +0000
 Description: APT Repository for Q4WIN10 Widget Style (Trinity Desktop)
 Label: Q4WIN10 Widget Style APT Repository
 Origin: Q4WIN10
 Suite: stable
 MD5Sum:
- c96111ff2a7efb4919c2997fbc3b8167              237 Release
- e24a87e18b66b9d187d469f3082d28b2              922 main/binary-amd64/Packages
- edf75854d11742818310c5f82a9a78a3              569 main/binary-amd64/Packages.gz
+ c0628d462a342e5919b94200fc7f7ab9              237 Release
+ 868e81d3a5cfab5209e6edea996f48d0             1844 main/binary-amd64/Packages
+ 13c8856a26e654b0b0e59af53c7c4a37              692 main/binary-amd64/Packages.gz
 SHA1:
- 1c59c452de97e4ec36c0660186452ee9af485187              237 Release
- 13e0c3b3aef147bf2eb9f4c333a78d46ec588651              922 main/binary-amd64/Packages
- 8c8beb67a3cda47ac2addb404cf7ed147b645a6e              569 main/binary-amd64/Packages.gz
+ 23eacab4c97e7a8ce2e8db0ee858c58b6c0171e6              237 Release
+ 63d674e2f8641c5816d6a425dabb17bbd8d090fe             1844 main/binary-amd64/Packages
+ e54fad2a4af47ce29e399e00e455d2102155d4e2              692 main/binary-amd64/Packages.gz
 SHA256:
- cb6fb9f31bd320a027dab07afca63dadcf4d1fdb8cc01016a9043b0a5b893cb8              237 Release
- 054d2c2ad2db801d0194ce2db2a38ffb149d5d9675806a9a74dd7410d09ab8a7              922 main/binary-amd64/Packages
- fb6e1e4a031d9c5c95891ae9ab4622aa6188a68db4db23b3d0c6b6e45efbcdb2              569 main/binary-amd64/Packages.gz
+ 589f1aa1c76c09e218e33de04edb9c9b089e89c81773127b6f206b19c5cbe61e              237 Release
+ 128b399c154223567c0e6dc34a2eaee5b9ca0144a100dfc3ab771237bed6aa28             1844 main/binary-amd64/Packages
+ 48b33f2d98f242a502c16e33086374a11760573f266a4d8507865cd51ac112cc              692 main/binary-amd64/Packages.gz
 SHA512:
- 59a8e3a26d9eb05c92db0862758b89abd5ae2b2d7f3bc4ae95df9c539e173a0dad96d09eeb39d3e7c91f0bc9cbfe4094671f43172503350fde4fba96a6737ffd              237 Release
- 75cb9b7949dc3a6bf41842408f329c59cf9e2a674254dd6b777254321469c04d0d8c3644868586433d4a574d74cfd2b5aff575fb5960e567f37ee9f189948fce              922 main/binary-amd64/Packages
- 79ee40e27b0a31535820a0423895826437e7c04a9674c01a2c4a6d97a72867b1891b166836aa9e8995e5ee71dade01d2d4e13f7e5ba3ac08f3e38f3723df9c2b              569 main/binary-amd64/Packages.gz
+ 8255a194e58abfe2bb9fee7161e4f66e34e864e68a4237cc2c91f49718c4e7ff5cc2371dbdab6e3bb2ceba6ef4aae216c3d2e2da6ad8cfccdbcf69b39834fa27              237 Release
+ 4ffcc1b20ab8cad17237fe8e1b5a79eb3d8a4b253fd4f59e32e04eef6bab44c820bf7b7f56b66208f085cf2869fd8caffef0ce8ba1c581284aea9e90b8ec4ec7             1844 main/binary-amd64/Packages
+ 2d7b2ae31c7bed1a1c438c7246d7e3b2c02eeb95f17c597a73a3288cbe55b52ba7430b7f36b52326d24e47705e4ecb3ba58f32985282418b555383af6492db1e              692 main/binary-amd64/Packages.gz
