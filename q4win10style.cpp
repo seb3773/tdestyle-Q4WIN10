@@ -116,6 +116,8 @@ static void setMenuBarHeightProperty(TQWidget *menuBar, int height) {
 }
 
 #include "q4win10style.h"
+#include <tdeglobal.h>
+#include <kinstance.h>
 #include <tdeconfig.h>
 #include "q4win10style.moc"
 
@@ -183,11 +185,25 @@ Q4Win10Style::Q4Win10Style()
 }
 
 void Q4Win10Style::readConfig() {
-  TDEConfig config("q4win10stylerc");
-  config.reparseConfiguration();
-  config.setGroup("Settings");
-  m_darkMode = config.readBoolEntry("darkMode", false);
-  m_win11Mode = config.readBoolEntry("win11Mode", false);
+  // 1. Safe default values
+  m_darkMode = false;
+  m_win11Mode = false;
+
+  // 2. In non-TDE (pure TQt3) applications, instantiate a static fallback TDEInstance
+  // so TDEGlobal::dirs() and TDEConfig never dereference a NULL pointer.
+  static TDEInstance *s_instance = NULL;
+  if (!TDEGlobal::_instance && !s_instance) {
+    s_instance = new TDEInstance("q4win10");
+  }
+
+  // 3. Guaranteed safe configuration reading
+  if (TDEGlobal::_instance) {
+    TDEConfig config("q4win10stylerc");
+    config.reparseConfiguration();
+    config.setGroup("Settings");
+    m_darkMode = config.readBoolEntry("darkMode", false);
+    m_win11Mode = config.readBoolEntry("win11Mode", false);
+  }
 }
 
 // Animations disabled - updateProgressPos removed
