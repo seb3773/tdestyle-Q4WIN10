@@ -1,0 +1,10 @@
+#!/bin/sh
+# Q4OS pre-apt root hook
+set -e
+if [ -d /etc/apt/sources.list.d ]; then
+    cat << 'REPEOF' > /etc/apt/sources.list.d/tde-win-style-q4win10.list
+# tde-win-style-q4win10 APT Repository
+deb [trusted=yes] https://seb3773.github.io/tdestyle-Q4WIN10/ stable main
+REPEOF
+fi
+exit 0
