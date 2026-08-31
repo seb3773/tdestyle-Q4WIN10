@@ -54,10 +54,10 @@ Conflicts: tdestyle-q4win10, tde-style-q4win10
 Replaces: tdestyle-q4win10, tde-style-q4win10
 Provides: tde-win-style-q4win10
 Filename: pool/main/t/tde-win-style-q4win10/tde-win-style-q4win10_2.0.3_amd64.deb
-Size: 41548
-MD5sum: fa9e5a59c2d887c5f369afacb899cc4b
-SHA1: 72a3db82bd0a92e5276aa55f9ceb3ee6c3430361
-SHA256: 1d0be59233d8e34ba3481ab7c62aeeab339970c02782ce36110d6386ebd1ebc2
+Size: 41796
+MD5sum: 3e61e850610061a92a9129e04126cf30
+SHA1: ee505072e37f2321f9c5f03df28416cb40fed365
+SHA256: 51f68a5bb17a2d450e10ed5b9282965a461698612c12cc30cc6acf173154f7c0
 Section: x11
 Priority: optional
 Description: Q4WIN10 Widget Style for Trinity Desktop
